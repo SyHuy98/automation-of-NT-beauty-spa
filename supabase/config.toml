@@ -1,0 +1,52 @@
+# Cấu hình Supabase CLI cho môi trường local (`supabase start`).
+# Project production: vjdzgeaowzhencuespdx (ap-southeast-1 / Singapore).
+project_id = "nt-beauty-spa"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000"]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+# Không cho tự đăng ký: tài khoản chỉ do chủ spa tạo
+enable_signup = false
+
+[auth.email]
+enable_signup = false
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+# Các function tự xác thực (secret nội bộ / JWT người gọi) nên tắt verify_jwt ở gateway
+[functions.admin-users]
+verify_jwt = false
+
+[functions.dispatch]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false

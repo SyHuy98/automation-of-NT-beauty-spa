@@ -1,0 +1,113 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
+import { Segmented } from "@/components/ui/form";
+import { formatMoney, formatMoneyShort } from "@/lib/format";
+import type { DashboardTechnician } from "@/types/app";
+
+/**
+ * Biểu đồ cân bằng thu nhập giữa các KTV (hôm nay / tháng này).
+ * Đường ngang = trung bình nhóm; cột đỏ gạch = lệch trên TB quá ngưỡng,
+ * cột xám = thấp hơn TB quá ngưỡng.
+ */
+export function BalanceChart({ technicians, thresholdPercent }: { technicians: DashboardTechnician[]; thresholdPercent: number }) {
+  const [range, setRange] = useState<"today" | "month">("month");
+
+  const { rows, avg } = useMemo(() => {
+    const rows = technicians.map((t) => ({
+      name: shortName(t.fullName),
+      fullName: t.fullName,
+      value: range === "today" ? t.todayAmount : t.monthAmount,
+      requested: range === "month" ? t.monthRequestedAmount : 0,
+    }));
+    const avg = rows.length ? rows.reduce((s, r) => s + r.value, 0) / rows.length : 0;
+    return { rows: rows.sort((a, b) => b.value - a.value), avg };
+  }, [technicians, range]);
+
+  const hi = avg * (1 + thresholdPercent / 100);
+  const lo = avg * (1 - thresholdPercent / 100);
+  const outliers = rows.filter((r) => avg > 0 && (r.value > hi || r.value < lo));
+
+  return (
+    <Card className="h-full">
+      <CardHeader
+        title="Cân bằng thu nhập"
+        subtitle={`Đánh dấu KTV lệch quá ±${thresholdPercent}% so với trung bình`}
+        action={
+          <Segmented
+            ariaLabel="Khoảng thời gian"
+            value={range}
+            onChange={setRange}
+            options={[
+              { value: "today", label: "Hôm nay" },
+              { value: "month", label: "Tháng này" },
+            ]}
+          />
+        }
+      />
+      <CardBody>
+        {rows.length === 0 ? (
+          <EmptyState title="Chưa có dữ liệu" />
+        ) : (
+          <>
+            <p className="mb-2 text-sm text-mocha">
+              Trung bình nhóm: <strong className="tabular text-espresso">{formatMoney(Math.round(avg))}</strong>
+            </p>
+            <div className="h-72" role="img" aria-label="Biểu đồ thu nhập theo KTV">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#E8D5A8" strokeDasharray="3 3" />
+                  <XAxis dataKey="name" tick={{ fill: "#6B4F3A", fontSize: 12 }} axisLine={false} tickLine={false} interval={0} />
+                  <YAxis
+                    tickFormatter={(v: number) => formatMoneyShort(v)}
+                    tick={{ fill: "#6B4F3A", fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={52}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(232,213,168,0.25)" }}
+                    formatter={(v) => [formatMoney(Number(v)), "Tiền tour"]}
+                    labelFormatter={(_, p) => (p?.[0]?.payload as { fullName?: string })?.fullName ?? ""}
+                    contentStyle={{ borderRadius: 12, borderColor: "#E8D5A8", background: "#FBF7F0" }}
+                  />
+                  <ReferenceLine y={avg} stroke="#8C6D35" strokeDasharray="6 4" label={{ value: "TB", fill: "#8C6D35", fontSize: 12, position: "right" }} />
+                  <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                    {rows.map((r) => (
+                      <Cell
+                        key={r.fullName}
+                        fill={avg > 0 && r.value > hi ? "#B5523B" : avg > 0 && r.value < lo ? "#9C948A" : "#C9A96E"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {outliers.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-sm">
+                {outliers.map((r) => {
+                  const pct = Math.round(((r.value - avg) / avg) * 100);
+                  return (
+                    <li key={r.fullName} className={pct > 0 ? "text-busy-ink" : "text-off-ink"}>
+                      {r.fullName}: {pct > 0 ? "cao hơn" : "thấp hơn"} TB {Math.abs(pct)}%
+                      {r.requested > 0 ? ` (tour chỉ định ${formatMoney(r.requested)})` : ""}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : avg > 0 ? (
+              <p className="mt-3 text-sm text-free-ink">Thu nhập đang cân bằng trong ngưỡng cho phép.</p>
+            ) : null}
+          </>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
+function shortName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return parts.slice(-1)[0] ?? name;
+}

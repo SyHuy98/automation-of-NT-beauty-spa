@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#3E2A1F"/>
+  <circle cx="256" cy="256" r="178" fill="none" stroke="#C9A96E" stroke-width="6"/>
+  <path d="M256 118c34 40 50 78 50 112 0 34-22 60-50 60s-50-26-50-60c0-34 16-72 50-112z" fill="none" stroke="#C9A96E" stroke-width="6"/>
+  <path d="M168 238c42 2 72 18 88 52-34 10-70 2-88-52zM344 238c-42 2-72 18-88 52 34 10 70 2 88-52z" fill="none" stroke="#E8D5A8" stroke-width="5"/>
+  <text x="256" y="388" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="96" font-weight="600" fill="#C9A96E" letter-spacing="6">NT</text>
+</svg>
