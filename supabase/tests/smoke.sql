@@ -113,6 +113,8 @@ begin
   perform public.decline_offer(v_offer, 'Sức khỏe');
   v_log := v_log || format('decline → tour=%s alert=%s; ', (select status from public.tours where id = v_tour),
     (select count(*) from public.admin_alerts where tour_id = v_tour and kind = 'requested_failed'));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  perform public.cancel_tour(v_tour, 'Khách về');
 
   -- Hết giờ: offer cho B quá hạn → expire_offers xử lý
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
