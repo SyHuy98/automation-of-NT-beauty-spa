@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/*
+ * Design token – NT Beauty Spa: tĩnh, ấm, cao cấp.
+ * Lưu ý tương phản: chữ trắng trên `gold` (#C9A96E) chỉ đạt ~2,2:1 nên nút chính
+ * dùng `gold-strong` (#8C6D35, đạt 4,8:1 với chữ trắng); `gold` dùng cho viền,
+ * icon, vòng đếm ngược, điểm nhấn.
+ */
+@theme {
+  --color-ivory: #fbf7f0;
+  --color-cream: #f3eadb;
+  --color-champagne: #e8d5a8;
+  --color-gold: #c9a96e;
+  --color-gold-deep: #a8864a;
+  --color-gold-strong: #8c6d35;
+  --color-gold-stronger: #765b2b;
+  --color-mocha: #6b4f3a;
+  --color-espresso: #3e2a1f;
+  --color-taupe: #a68a6d;
+
+  /* Trạng thái: chấm/viền dùng màu gốc, chữ dùng bản "ink" đậm hơn để đọc rõ */
+  --color-free: #7a9a6b;
+  --color-free-ink: #46643a;
+  --color-pending: #d9a441;
+  --color-pending-ink: #7f5a0e;
+  --color-busy: #b5523b;
+  --color-busy-ink: #8e3b27;
+  --color-off: #9c948a;
+  --color-off-ink: #5f5850;
+
+  --radius-card: 1.25rem;
+  --shadow-soft: 0 1px 2px rgb(62 42 31 / 0.04), 0 8px 24px -12px rgb(62 42 31 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(62 42 31 / 0.06), 0 16px 40px -16px rgb(62 42 31 / 0.22);
+
+  --animate-fade-in: fade-in 200ms ease-out both;
+  --animate-slide-up: slide-up 220ms ease-out both;
+  --animate-pulse-ring: pulse-ring 1.6s ease-out infinite;
+}
+
+@theme inline {
+  --font-sans: var(--font-be-vietnam), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgb(201 169 110 / 0.55); }
+  100% { box-shadow: 0 0 0 18px rgb(201 169 110 / 0); }
+}
+
+:root {
+  color-scheme: light;
+  --background: var(--color-ivory);
+  --foreground: var(--color-espresso);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Số tiền luôn thẳng cột */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--color-champagne);
+  color: var(--color-espresso);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold-strong);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
