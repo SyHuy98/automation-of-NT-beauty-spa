@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Checkbox, Field, Input, Select } from "@/components/ui/form";
+import { Checkbox, Field, Input } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { adminUsers } from "@/lib/admin-users";
-import { errorMessage, SHIFT_LABEL } from "@/lib/format";
+import { errorMessage } from "@/lib/format";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { fieldErrors, memberCreateSchema, memberUpdateSchema } from "@/lib/validation/schemas";
 import type { ProfileRow, ServiceRow, ShiftType } from "@/types/app";
@@ -39,7 +39,6 @@ function MemberDialogBody({
   const [username, setUsername] = useState(member?.username ?? "");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState(member?.phone ?? "");
-  const [shift, setShift] = useState<ShiftType>(member?.shift ?? "morning");
   const [skillIds, setSkillIds] = useState<string[]>(currentSkills);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -56,7 +55,6 @@ function MemberDialogBody({
           password,
           phone,
           role,
-          shift,
           skill_ids: role === "technician" ? skillIds : [],
         });
         if (!parsed.success) {
@@ -66,7 +64,7 @@ function MemberDialogBody({
         await adminUsers({ action: "create", ...parsed.data, phone: parsed.data.phone || undefined });
         toast.success(`Đã tạo tài khoản ${parsed.data.username}`);
       } else {
-        const parsed = memberUpdateSchema.safeParse({ full_name: fullName, phone, shift, skill_ids: skillIds });
+        const parsed = memberUpdateSchema.safeParse({ full_name: fullName, phone, skill_ids: skillIds });
         if (!parsed.success) {
           setErrors(fieldErrors(parsed.error));
           return;
@@ -75,7 +73,8 @@ function MemberDialogBody({
           p_id: member.id,
           p_full_name: parsed.data.full_name,
           p_phone: parsed.data.phone,
-          p_shift: parsed.data.shift,
+          // ca làm xác định theo từng ngày (Lịch ca / lúc vào ca), không lưu ở hồ sơ
+          p_shift: null as unknown as ShiftType,
           p_skill_ids: role === "technician" ? parsed.data.skill_ids : (null as unknown as string[]),
         });
         if (error) throw new Error(errorMessage(error));
@@ -137,19 +136,6 @@ function MemberDialogBody({
           {isNew ? (
             <Field label="Mật khẩu tạm" required error={errors.password} hint="Tối thiểu 6 ký tự">
               {(p) => <Input {...p} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="off" />}
-            </Field>
-          ) : null}
-          {role === "technician" ? (
-            <Field label="Ca mặc định" error={errors.shift}>
-              {(p) => (
-                <Select {...p} value={shift} onChange={(e) => setShift(e.target.value as ShiftType)}>
-                  {(["morning", "afternoon", "full", "off"] as ShiftType[]).map((s) => (
-                    <option key={s} value={s}>
-                      {SHIFT_LABEL[s]}
-                    </option>
-                  ))}
-                </Select>
-              )}
             </Field>
           ) : null}
         </div>

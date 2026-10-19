@@ -54,7 +54,6 @@ async function main() {
     full_name: fullName,
     username,
     role: "owner",
-    shift: "full",
   });
   if (profileError) {
     await sb.auth.admin.deleteUser(data.user.id);

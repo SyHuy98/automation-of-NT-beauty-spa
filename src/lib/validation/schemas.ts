@@ -30,14 +30,12 @@ export const memberCreateSchema = z.object({
   password: passwordSchema,
   phone,
   role: z.enum(["technician", "manager"]),
-  shift: shiftSchema,
   skill_ids: z.array(z.string().uuid()),
 });
 
 export const memberUpdateSchema = z.object({
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone,
-  shift: shiftSchema,
   skill_ids: z.array(z.string().uuid()),
 });
 

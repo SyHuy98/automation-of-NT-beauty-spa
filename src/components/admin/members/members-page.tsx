@@ -11,7 +11,7 @@ import { Avatar, Badge } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { adminUsers } from "@/lib/admin-users";
-import { SHIFT_LABEL, vnMonthStart, vnToday } from "@/lib/format";
+import { vnMonthStart, vnToday } from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { passwordSchema } from "@/lib/validation/schemas";
@@ -95,7 +95,6 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
                 </div>
                 {role === "technician" ? (
                   <>
-                    <p className="text-sm text-mocha">Ca mặc định: {SHIFT_LABEL[m.shift]}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {sk.length === 0 ? (
                         <span className="text-sm text-mocha">Chưa có kỹ năng riêng</span>

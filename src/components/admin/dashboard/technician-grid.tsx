@@ -102,7 +102,11 @@ function TechCard({
   onCheckOut: () => void;
   onOpenTour: (id: string) => void;
 }) {
-  const shiftLabel = t.checkin ? SHIFT_LABEL[t.checkin.shift] : SHIFT_LABEL[t.scheduledShift];
+  const shiftLabel = t.checkin
+    ? SHIFT_LABEL[t.checkin.shift]
+    : t.scheduledShift
+      ? `Lịch: ${SHIFT_LABEL[t.scheduledShift].toLowerCase()}`
+      : "Chưa xếp ca";
   const checkedOut = t.checkin?.checkOutAt;
 
   let detail: React.ReactNode = null;
@@ -186,13 +190,23 @@ function TechCard({
   );
 }
 
+type WorkShift = "morning" | "afternoon" | "full";
+
 function CheckInDialog({ tech, onClose, onDone }: { tech: DashboardTechnician | null; onClose: () => void; onDone: () => void }) {
-  const [shift, setShift] = useState<"morning" | "afternoon" | "full">("morning");
+  if (!tech) return null;
+  return <CheckInBody key={tech.id} tech={tech} onClose={onClose} onDone={onDone} />;
+}
+
+function CheckInBody({ tech, onClose, onDone }: { tech: DashboardTechnician; onClose: () => void; onDone: () => void }) {
+  // chọn sẵn theo Lịch ca hôm nay nếu đã xếp; chưa xếp thì admin chọn
+  const [shift, setShift] = useState<WorkShift | null>(
+    tech.scheduledShift && tech.scheduledShift !== "off" ? tech.scheduledShift : null,
+  );
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
   const submit = async () => {
-    if (!tech) return;
+    if (!shift) return;
     setBusy(true);
     const { error } = await getSupabaseBrowser().rpc("admin_check_in", { p_technician_id: tech.id, p_shift: shift });
     setBusy(false);
@@ -206,23 +220,23 @@ function CheckInDialog({ tech, onClose, onDone }: { tech: DashboardTechnician | 
 
   return (
     <Dialog
-      open={!!tech}
+      open
       onOpenChange={(v) => !v && onClose()}
-      title={`Vào ca thay cho ${tech?.fullName ?? ""}`}
+      title={`Vào ca thay cho ${tech.fullName}`}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Huỷ bỏ
           </Button>
-          <Button onClick={submit} loading={busy}>
+          <Button onClick={submit} loading={busy} disabled={!shift}>
             Vào ca
           </Button>
         </>
       }
     >
       <p className="mb-3 text-sm text-mocha">Dùng khi KTV quên điện thoại. Chọn ca làm hôm nay:</p>
-      <Segmented
+      <Segmented<WorkShift>
         ariaLabel="Ca làm"
         value={shift}
         onChange={setShift}

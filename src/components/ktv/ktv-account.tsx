@@ -5,7 +5,6 @@ import { logoutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/misc";
-import { SHIFT_LABEL } from "@/lib/format";
 import { ChangePasswordForm } from "../shared/change-password";
 import { PushToggle } from "../shared/push-toggle";
 import { useSession } from "../shared/session-context";
@@ -21,7 +20,7 @@ export function KtvAccount() {
           <div>
             <p className="font-serif text-xl font-semibold text-espresso">{me.fullName}</p>
             <p className="text-sm text-mocha">
-              @{me.username} · Ca mặc định: {SHIFT_LABEL[me.shift]}
+              @{me.username}
             </p>
           </div>
         </CardBody>

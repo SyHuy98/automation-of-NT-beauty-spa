@@ -24,7 +24,7 @@ export function KtvHome() {
   const now = useNow(data?.now);
   const toast = useToast();
   const [shiftOpen, setShiftOpen] = useState(false);
-  const [shift, setShift] = useState<WorkShift>("morning");
+  const [shift, setShift] = useState<WorkShift | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmOut, setConfirmOut] = useState(false);
   const [confirmDone, setConfirmDone] = useState(false);
@@ -43,14 +43,18 @@ export function KtvHome() {
         ? "free"
         : "off";
 
-  // Mở hộp vào ca: chọn sẵn ca theo lịch hôm nay (hoặc ca mặc định)
+  // Mở hộp vào ca
   const openCheckIn = () => {
-    const s = data.scheduledShift !== "off" ? data.scheduledShift : data.profile.defaultShift !== "off" ? data.profile.defaultShift : "morning";
-    setShift(s as WorkShift);
+    // Ca thay đổi theo ngày: chọn sẵn nếu admin đã xếp lịch hôm nay, chưa xếp thì KTV tự chọn
+    setShift(data.scheduledShift && data.scheduledShift !== "off" ? data.scheduledShift : null);
     setShiftOpen(true);
   };
 
   const doCheckIn = async () => {
+    if (!shift) {
+      toast.error("Vui lòng chọn ca làm hôm nay");
+      return;
+    }
     setBusy(true);
     const { error: err } = await getSupabaseBrowser().rpc("check_in", { p_shift: shift });
     setBusy(false);
@@ -89,7 +93,7 @@ export function KtvHome() {
           <p className="text-sm text-mocha">Xin chào,</p>
           <h1 className="font-serif text-2xl font-semibold text-espresso">{data.profile.fullName}</h1>
           <p className="text-sm text-mocha">
-            {formatDate(data.today)} · Lịch: {SHIFT_LABEL[data.scheduledShift]}
+            {formatDate(data.today)} · Lịch hôm nay: {data.scheduledShift ? SHIFT_LABEL[data.scheduledShift] : "chưa xếp"}
           </p>
         </div>
         <StatusBadge status={status} label={status === "off" ? (data.checkin?.checkOutAt ? "Đã ra ca" : "Chưa vào ca") : undefined} />
@@ -196,7 +200,7 @@ export function KtvHome() {
         title="Vào ca"
         size="sm"
         footer={
-          <Button size="lg" className="w-full" onClick={doCheckIn} loading={busy}>
+          <Button size="lg" className="w-full" onClick={doCheckIn} loading={busy} disabled={!shift}>
             Xác nhận vào ca
           </Button>
         }
@@ -206,7 +210,11 @@ export function KtvHome() {
             Lịch hôm nay của bạn là <strong>Nghỉ</strong>. Vẫn có thể vào ca nếu được quản lý đồng ý.
           </p>
         ) : null}
-        <p className="mb-3 text-sm text-mocha">Chọn ca làm hôm nay:</p>
+        <p className="mb-3 text-sm text-mocha">
+          {data.scheduledShift && data.scheduledShift !== "off"
+            ? "Quản lý đã xếp ca bên dưới – đổi nếu hôm nay bạn làm ca khác:"
+            : "Chọn ca làm hôm nay:"}
+        </p>
         <Segmented<WorkShift>
           ariaLabel="Ca làm"
           value={shift}

@@ -12,7 +12,8 @@ import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { ProfileRow, ShiftType } from "@/types/app";
 
-const CYCLE: ShiftType[] = ["morning", "afternoon", "full", "off"];
+// null = chưa xếp (KTV tự chọn ca khi bấm "Vào ca")
+const CYCLE: Array<ShiftType | null> = [null, "morning", "afternoon", "full", "off"];
 const TONE: Record<ShiftType, string> = {
   morning: "bg-champagne/60 text-gold-stronger border-gold/50",
   afternoon: "bg-[#e9dccb] text-mocha border-taupe/60",
@@ -25,7 +26,7 @@ export function SchedulePage() {
   const toast = useToast();
   const [weekStart, setWeekStart] = useState(() => mondayOf(vnToday()));
   // Ô vừa bấm đổi (hiển thị ngay, chưa cần chờ tải lại)
-  const [overrides, setOverrides] = useState<Map<string, ShiftType>>(new Map());
+  const [overrides, setOverrides] = useState<Map<string, ShiftType | null>>(new Map());
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
   const query = useQuery(async () => {
@@ -37,7 +38,7 @@ export function SchedulePage() {
     if (t.error) throw t.error;
     return {
       techs: t.data as ProfileRow[],
-      schedule: new Map((s.data ?? []).map((r) => [`${r.technician_id}|${r.work_date}`, r.shift as ShiftType])),
+      schedule: new Map<string, ShiftType | null>((s.data ?? []).map((r) => [`${r.technician_id}|${r.work_date}`, r.shift as ShiftType])),
     };
   }, [days]);
   const { error, refetch: load } = query;
@@ -46,12 +47,13 @@ export function SchedulePage() {
 
   const cycle = async (tech: ProfileRow, day: string) => {
     const key = `${tech.id}|${day}`;
-    const current = schedule.get(key) ?? tech.shift;
+    const current = schedule.get(key) ?? null;
     const next = CYCLE[(CYCLE.indexOf(current) + 1) % CYCLE.length];
     setOverrides((m) => new Map(m).set(key, next));
-    const { error: err } = await getSupabaseBrowser()
-      .from("shift_schedules")
-      .upsert({ technician_id: tech.id, work_date: day, shift: next, updated_at: new Date().toISOString() });
+    const table = getSupabaseBrowser().from("shift_schedules");
+    const { error: err } = next
+      ? await table.upsert({ technician_id: tech.id, work_date: day, shift: next, updated_at: new Date().toISOString() })
+      : await table.delete().eq("technician_id", tech.id).eq("work_date", day);
     if (err) {
       toast.error(errorMessage(err));
       setOverrides((m) => {
@@ -69,7 +71,7 @@ export function SchedulePage() {
     <div>
       <PageHeader
         title="Lịch ca"
-        subtitle="Bấm vào ô để đổi ca: Sáng → Chiều → Full → Nghỉ. Ô không đổi = theo ca mặc định của KTV."
+        subtitle="Ca của KTV thay đổi theo ngày. Bấm ô để xếp: — (chưa xếp) → Sáng → Chiều → Full → Nghỉ. Ô chưa xếp thì KTV tự chọn ca khi bấm Vào ca."
         action={
           <div className="flex items-center gap-1 rounded-xl border border-champagne bg-white/80 px-1">
             <Button variant="ghost" size="icon" onClick={() => setWeekStart((w) => addDays(w, -7))} aria-label="Tuần trước">
@@ -106,8 +108,8 @@ export function SchedulePage() {
                   <tr key={t.id}>
                     <td className="sticky left-0 bg-ivory px-4 py-2 font-medium text-espresso">{t.full_name}</td>
                     {days.map((d) => {
-                      const explicit = schedule.get(`${t.id}|${d}`);
-                      const value = explicit ?? t.shift;
+                      const value = schedule.get(`${t.id}|${d}`) ?? null;
+                      const label = value ? SHIFT_LABEL[value] : "Chưa xếp";
                       return (
                         <td key={d} className="px-1.5 py-1.5 text-center">
                           <button
@@ -115,12 +117,11 @@ export function SchedulePage() {
                             onClick={() => cycle(t, d)}
                             className={cn(
                               "w-full rounded-lg border px-2 py-2 text-xs font-semibold transition-colors",
-                              TONE[value],
-                              !explicit && "border-dashed opacity-75",
+                              value ? TONE[value] : "border-dashed border-champagne bg-white/60 text-taupe",
                             )}
-                            aria-label={`${t.full_name} ${formatWeekday(d)}: ${SHIFT_LABEL[value]}. Bấm để đổi`}
+                            aria-label={`${t.full_name} ${formatWeekday(d)}: ${label}. Bấm để đổi`}
                           >
-                            {SHIFT_LABEL[value].replace("Ca ", "")}
+                            {value ? label.replace("Ca ", "") : "—"}
                           </button>
                         </td>
                       );

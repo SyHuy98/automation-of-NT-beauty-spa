@@ -287,7 +287,7 @@ export type Database = {
           is_active: boolean
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
-          shift: Database["public"]["Enums"]["shift_type"]
+          shift: Database["public"]["Enums"]["shift_type"] | null
           updated_at: string
           username: string
         }
@@ -298,7 +298,7 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          shift?: Database["public"]["Enums"]["shift_type"]
+          shift?: Database["public"]["Enums"]["shift_type"] | null
           updated_at?: string
           username: string
         }
@@ -309,7 +309,7 @@ export type Database = {
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          shift?: Database["public"]["Enums"]["shift_type"]
+          shift?: Database["public"]["Enums"]["shift_type"] | null
           updated_at?: string
           username?: string
         }
