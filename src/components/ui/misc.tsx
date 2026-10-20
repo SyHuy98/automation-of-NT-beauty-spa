@@ -72,6 +72,8 @@ export function Avatar({
   size?: keyof typeof AVATAR_PX;
 }) {
   const dims = { sm: "h-9 w-9 text-xs", md: "h-12 w-12 text-sm", lg: "h-16 w-16 text-lg", xl: "h-24 w-24 text-2xl" }[size];
+  // đặt chấm nằm trên viền tròn (góc 45°), không lòi ra ngoài
+  const dotDims = { sm: "bottom-0 right-0 h-2.5 w-2.5", md: "bottom-0 right-0 h-3 w-3", lg: "bottom-0.5 right-0.5 h-3.5 w-3.5", xl: "bottom-1.5 right-1.5 h-4 w-4" }[size];
   return (
     <span className="relative inline-flex shrink-0">
       <span
@@ -95,8 +97,9 @@ export function Avatar({
         )}
       </span>
       {status ? (
-        <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-ivory">
-          <StatusDot status={status} pulse={status === "pending"} />
+        // Chấm trạng thái: 1 khối tròn cố định kích thước, viền trắng bằng ring (không phụ thuộc line-height)
+        <span className={cn("absolute block rounded-full ring-2 ring-white", dotDims, statusDot[status])} aria-hidden="true">
+          {status === "pending" ? <span className={cn("absolute inset-0 animate-ping rounded-full opacity-60", statusDot[status])} /> : null}
         </span>
       ) : null}
     </span>
