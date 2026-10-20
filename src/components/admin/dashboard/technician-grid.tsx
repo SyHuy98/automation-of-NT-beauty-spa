@@ -9,6 +9,7 @@ import { Segmented } from "@/components/ui/form";
 import { Avatar, Money, StatusBadge } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatDuration, formatTime, SHIFT_LABEL } from "@/lib/format";
+import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type TechStatus } from "@/types/app";
 
@@ -27,6 +28,11 @@ export function TechnicianGrid({
 }) {
   const [checkInFor, setCheckInFor] = useState<DashboardTechnician | null>(null);
   const toast = useToast();
+  // Ảnh đại diện (tải riêng, tải lại khi danh sách KTV thay đổi)
+  const avatars = useQuery(async () => {
+    const { data } = await getSupabaseBrowser().from("profiles").select("id, avatar_url").eq("role", "technician");
+    return new Map((data ?? []).map((p) => [p.id, p.avatar_url]));
+  }, [technicians.map((t) => t.id).join(",")]).data;
 
   const groups = ORDER.map((status) => ({
     status,
@@ -72,6 +78,7 @@ export function TechnicianGrid({
                 <TechCard
                   key={t.id}
                   t={t}
+                  avatarUrl={avatars?.get(t.id) ?? null}
                   status={g.status}
                   now={now}
                   onCheckIn={() => setCheckInFor(t)}
@@ -89,6 +96,7 @@ export function TechnicianGrid({
 
 function TechCard({
   t,
+  avatarUrl,
   status,
   now,
   onCheckIn,
@@ -96,6 +104,7 @@ function TechCard({
   onOpenTour,
 }: {
   t: DashboardTechnician;
+  avatarUrl: string | null;
   status: TechStatus;
   now: number;
   onCheckIn: () => void;
@@ -164,7 +173,7 @@ function TechCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <Avatar name={t.fullName} status={status} />
+        <Avatar name={t.fullName} src={avatarUrl} status={status} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-espresso">{t.fullName}</p>
           <p className="text-xs text-mocha">{shiftLabel}</p>

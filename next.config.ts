@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   // dùng render động truyền thống thay vì Cache Components.
   cacheComponents: false,
   poweredByHeader: false,
+  images: {
+    // Ảnh đại diện lưu ở Supabase Storage (bucket công khai `avatars`)
+    remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/avatars/**" }],
+  },
   turbopack: {
     rules: {
       "*.css": {

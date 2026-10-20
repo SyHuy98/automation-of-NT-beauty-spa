@@ -19,12 +19,14 @@ import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { logoutAction } from "@/app/actions/auth";
 import { cn } from "@/components/ui/cn";
-import { Logo } from "@/components/ui/misc";
+import { Dialog } from "@/components/ui/dialog";
+import { Avatar, Logo } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { playAlert } from "@/lib/alerts";
 import { ROLE_LABEL } from "@/lib/format";
 import { useRealtime } from "@/lib/hooks/use-realtime";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { AvatarUploader } from "../shared/avatar-uploader";
 import { useSession } from "../shared/session-context";
 
 interface NavItem {
@@ -50,6 +52,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
   const profile = useSession();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const toast = useToast();
   const lastAlertId = useRef<number | null>(null);
 
@@ -106,8 +109,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const footer = (
     <div className="mt-6 border-t border-white/10 pt-4">
-      <p className="truncate px-1 text-sm font-medium text-cream">{profile.fullName}</p>
-      <p className="px-1 text-xs text-cream/60">{ROLE_LABEL[profile.role]}</p>
+      <button
+        type="button"
+        onClick={() => setAccountOpen(true)}
+        className="flex w-full items-center gap-3 rounded-xl px-1 py-1 text-left hover:bg-white/5"
+        aria-label="Tài khoản của tôi – đổi ảnh đại diện"
+      >
+        <Avatar name={profile.fullName} src={profile.avatarUrl} size="sm" />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-cream">{profile.fullName}</span>
+          <span className="block text-xs text-cream/60">{ROLE_LABEL[profile.role]}</span>
+        </span>
+      </button>
       <form action={logoutAction} className="mt-3">
         <button
           type="submit"
@@ -162,6 +175,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
       ) : null}
 
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+
+      <Dialog open={accountOpen} onOpenChange={setAccountOpen} title="Tài khoản của tôi" description={`@${profile.username}`} size="sm">
+        <AvatarUploader userId={profile.id} name={profile.fullName} url={profile.avatarUrl} />
+      </Dialog>
     </div>
   );
 }

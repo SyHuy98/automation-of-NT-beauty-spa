@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { logoutAction } from "@/app/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/misc";
+import { AvatarUploader } from "../shared/avatar-uploader";
 import { ChangePasswordForm } from "../shared/change-password";
 import { PushToggle } from "../shared/push-toggle";
 import { useSession } from "../shared/session-context";
@@ -15,14 +15,12 @@ export function KtvAccount() {
     <div className="space-y-4">
       <h1 className="font-serif text-2xl font-semibold text-espresso">Tài khoản</h1>
       <Card>
-        <CardBody className="flex items-center gap-4">
-          <Avatar name={me.fullName} size="lg" />
+        <CardBody className="space-y-4">
           <div>
             <p className="font-serif text-xl font-semibold text-espresso">{me.fullName}</p>
-            <p className="text-sm text-mocha">
-              @{me.username}
-            </p>
+            <p className="text-sm text-mocha">@{me.username}</p>
           </div>
+          <AvatarUploader userId={me.id} name={me.fullName} url={me.avatarUrl} />
         </CardBody>
       </Card>
       <Card>

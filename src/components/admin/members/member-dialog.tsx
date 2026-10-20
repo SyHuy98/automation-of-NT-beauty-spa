@@ -9,6 +9,7 @@ import { adminUsers } from "@/lib/admin-users";
 import { errorMessage } from "@/lib/format";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { fieldErrors, memberCreateSchema, memberUpdateSchema } from "@/lib/validation/schemas";
+import { AvatarUploader } from "../../shared/avatar-uploader";
 import type { ProfileRow, ServiceRow, ShiftType } from "@/types/app";
 
 export function MemberDialog(props: Parameters<typeof MemberDialogBody>[0]) {
@@ -109,6 +110,9 @@ function MemberDialogBody({
       }
     >
       <div className="space-y-4">
+        {member ? (
+          <AvatarUploader userId={member.id} name={member.full_name} url={member.avatar_url} onChanged={onSaved} />
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Họ tên" required error={errors.full_name}>
             {(p) => <Input {...p} value={fullName} onChange={(e) => setFullName(e.target.value)} autoFocus />}

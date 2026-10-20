@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, Clock, LogIn, LogOut, Star, Users } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/card";
@@ -8,18 +9,20 @@ import { cn } from "@/components/ui/cn";
 import { ConfirmDialog } from "@/components/ui/confirm";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/form";
-import { Money, StatusBadge } from "@/components/ui/misc";
+import { Avatar, Money, StatusBadge } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatDate, formatDuration, formatTime, SHIFT_LABEL } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { ShiftType, TechStatus } from "@/types/app";
+import { useSession } from "../shared/session-context";
 import { useKtvData } from "./ktv-data";
 
 type WorkShift = Exclude<ShiftType, "off">;
 
 export function KtvHome() {
+  const me = useSession();
   const { data, error, refetch } = useKtvData();
   const now = useNow(data?.now);
   const toast = useToast();
@@ -89,7 +92,10 @@ export function KtvHome() {
   return (
     <div className="space-y-5">
       <header className="flex items-start justify-between gap-3">
-        <div>
+        <Link href="/ktv/tai-khoan" aria-label="Tài khoản – đổi ảnh đại diện" className="shrink-0">
+          <Avatar name={data.profile.fullName} src={me.avatarUrl} size="lg" />
+        </Link>
+        <div className="min-w-0 flex-1">
           <p className="text-sm text-mocha">Xin chào,</p>
           <h1 className="font-serif text-2xl font-semibold text-espresso">{data.profile.fullName}</h1>
           <p className="text-sm text-mocha">
