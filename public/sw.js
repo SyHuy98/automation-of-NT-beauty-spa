@@ -4,7 +4,7 @@
  * - Không cache dữ liệu nghiệp vụ (luôn cần dữ liệu realtime mới nhất);
  *   chỉ có trang offline đơn giản khi mất mạng.
  */
-const VERSION = "ntspa-v1";
+const VERSION = "ntspa-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
