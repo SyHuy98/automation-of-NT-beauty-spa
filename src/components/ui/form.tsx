@@ -115,7 +115,8 @@ export function Segmented<T extends string>({
   ariaLabel,
   className,
 }: {
-  value: T;
+  /** null = chưa chọn */
+  value: T | null;
   onChange: (v: T) => void;
   options: Array<{ value: T; label: ReactNode; disabled?: boolean }>;
   ariaLabel: string;

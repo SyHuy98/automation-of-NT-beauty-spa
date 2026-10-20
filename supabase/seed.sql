@@ -42,8 +42,13 @@ begin
     values (gen_random_uuid(), v_id, v_id::text,
             jsonb_build_object('sub', v_id::text, 'email', r.username || '@ntspa.local', 'email_verified', true),
             'email', now(), now(), now());
-    insert into public.profiles (id, full_name, username, role, shift)
-    values (v_id, r.full_name, r.username, r.role::public.user_role, r.shift::public.shift_type);
+    insert into public.profiles (id, full_name, username, role)
+    values (v_id, r.full_name, r.username, r.role::public.user_role);
+    -- ca làm theo ngày: xếp lịch hôm nay cho KTV demo
+    if r.role = 'technician' then
+      insert into public.shift_schedules (technician_id, work_date, shift)
+      values (v_id, public.vn_today(), r.shift::public.shift_type);
+    end if;
   end loop;
 end $$;
 

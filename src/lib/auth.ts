@@ -10,7 +10,7 @@ export interface SessionProfile {
   fullName: string;
   username: string;
   role: UserRole;
-  shift: Database["public"]["Enums"]["shift_type"];
+  avatarUrl: string | null;
 }
 
 /** Hồ sơ người đang đăng nhập (null nếu chưa đăng nhập / bị khoá / chưa có hồ sơ) */
@@ -22,11 +22,11 @@ export async function getSessionProfile(): Promise<SessionProfile | null> {
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("id, full_name, username, role, shift, is_active")
+    .select("id, full_name, username, role, is_active, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
   if (!data || !data.is_active) return null;
-  return { id: data.id, fullName: data.full_name, username: data.username, role: data.role, shift: data.shift };
+  return { id: data.id, fullName: data.full_name, username: data.username, role: data.role, avatarUrl: data.avatar_url };
 }
 
 export function homeForRole(role: UserRole): string {

@@ -9,6 +9,7 @@ import { Segmented } from "@/components/ui/form";
 import { Avatar, Money, StatusBadge } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatDuration, formatTime, SHIFT_LABEL } from "@/lib/format";
+import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type TechStatus } from "@/types/app";
 
@@ -27,6 +28,11 @@ export function TechnicianGrid({
 }) {
   const [checkInFor, setCheckInFor] = useState<DashboardTechnician | null>(null);
   const toast = useToast();
+  // Ảnh đại diện (tải riêng, tải lại khi danh sách KTV thay đổi)
+  const avatars = useQuery(async () => {
+    const { data } = await getSupabaseBrowser().from("profiles").select("id, avatar_url").eq("role", "technician");
+    return new Map((data ?? []).map((p) => [p.id, p.avatar_url]));
+  }, [technicians.map((t) => t.id).join(",")]).data;
 
   const groups = ORDER.map((status) => ({
     status,
@@ -72,6 +78,7 @@ export function TechnicianGrid({
                 <TechCard
                   key={t.id}
                   t={t}
+                  avatarUrl={avatars?.get(t.id) ?? null}
                   status={g.status}
                   now={now}
                   onCheckIn={() => setCheckInFor(t)}
@@ -89,6 +96,7 @@ export function TechnicianGrid({
 
 function TechCard({
   t,
+  avatarUrl,
   status,
   now,
   onCheckIn,
@@ -96,13 +104,18 @@ function TechCard({
   onOpenTour,
 }: {
   t: DashboardTechnician;
+  avatarUrl: string | null;
   status: TechStatus;
   now: number;
   onCheckIn: () => void;
   onCheckOut: () => void;
   onOpenTour: (id: string) => void;
 }) {
-  const shiftLabel = t.checkin ? SHIFT_LABEL[t.checkin.shift] : SHIFT_LABEL[t.scheduledShift];
+  const shiftLabel = t.checkin
+    ? SHIFT_LABEL[t.checkin.shift]
+    : t.scheduledShift
+      ? `Lịch: ${SHIFT_LABEL[t.scheduledShift].toLowerCase()}`
+      : "Chưa xếp ca";
   const checkedOut = t.checkin?.checkOutAt;
 
   let detail: React.ReactNode = null;
@@ -160,7 +173,7 @@ function TechCard({
       )}
     >
       <div className="flex items-center gap-3">
-        <Avatar name={t.fullName} status={status} />
+        <Avatar name={t.fullName} src={avatarUrl} status={status} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-espresso">{t.fullName}</p>
           <p className="text-xs text-mocha">{shiftLabel}</p>
@@ -186,13 +199,23 @@ function TechCard({
   );
 }
 
+type WorkShift = "morning" | "afternoon" | "full";
+
 function CheckInDialog({ tech, onClose, onDone }: { tech: DashboardTechnician | null; onClose: () => void; onDone: () => void }) {
-  const [shift, setShift] = useState<"morning" | "afternoon" | "full">("morning");
+  if (!tech) return null;
+  return <CheckInBody key={tech.id} tech={tech} onClose={onClose} onDone={onDone} />;
+}
+
+function CheckInBody({ tech, onClose, onDone }: { tech: DashboardTechnician; onClose: () => void; onDone: () => void }) {
+  // chọn sẵn theo Lịch ca hôm nay nếu đã xếp; chưa xếp thì admin chọn
+  const [shift, setShift] = useState<WorkShift | null>(
+    tech.scheduledShift && tech.scheduledShift !== "off" ? tech.scheduledShift : null,
+  );
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
   const submit = async () => {
-    if (!tech) return;
+    if (!shift) return;
     setBusy(true);
     const { error } = await getSupabaseBrowser().rpc("admin_check_in", { p_technician_id: tech.id, p_shift: shift });
     setBusy(false);
@@ -206,23 +229,23 @@ function CheckInDialog({ tech, onClose, onDone }: { tech: DashboardTechnician | 
 
   return (
     <Dialog
-      open={!!tech}
+      open
       onOpenChange={(v) => !v && onClose()}
-      title={`Vào ca thay cho ${tech?.fullName ?? ""}`}
+      title={`Vào ca thay cho ${tech.fullName}`}
       size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Huỷ bỏ
           </Button>
-          <Button onClick={submit} loading={busy}>
+          <Button onClick={submit} loading={busy} disabled={!shift}>
             Vào ca
           </Button>
         </>
       }
     >
       <p className="mb-3 text-sm text-mocha">Dùng khi KTV quên điện thoại. Chọn ca làm hôm nay:</p>
-      <Segmented
+      <Segmented<WorkShift>
         ariaLabel="Ca làm"
         value={shift}
         onChange={setShift}

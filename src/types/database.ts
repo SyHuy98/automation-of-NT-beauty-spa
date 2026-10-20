@@ -281,35 +281,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           full_name: string
           id: string
           is_active: boolean
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
-          shift: Database["public"]["Enums"]["shift_type"]
+          shift: Database["public"]["Enums"]["shift_type"] | null
           updated_at: string
           username: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           full_name: string
           id: string
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          shift?: Database["public"]["Enums"]["shift_type"]
+          shift?: Database["public"]["Enums"]["shift_type"] | null
           updated_at?: string
           username: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string
           id?: string
           is_active?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          shift?: Database["public"]["Enums"]["shift_type"]
+          shift?: Database["public"]["Enums"]["shift_type"] | null
           updated_at?: string
           username?: string
         }
@@ -1063,6 +1066,10 @@ export type Database = {
           p_reply: string
           p_status: Database["public"]["Enums"]["dispute_status"]
         }
+        Returns: undefined
+      }
+      set_avatar: {
+        Args: { p_avatar_url: string; p_user_id: string }
         Returns: undefined
       }
       send_announcement: {

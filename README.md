@@ -55,8 +55,8 @@ scripts/create-owner.ts   # tạo tài khoản chủ spa
 
 ### Mô hình dữ liệu (tóm tắt)
 
-- `profiles` (vai trò `owner | manager | technician`, ca mặc định `morning | afternoon | full | off`), `services` (bảng giá chung), `technician_skills`, `app_settings` (1 dòng).
-- `shift_schedules` (lịch ca theo ngày do admin xếp) · `shift_checkins` (vào/ra ca thực tế, ca của ngày).
+- `profiles` (vai trò `owner | manager | technician`; KTV **không có ca cố định**), `services` (bảng giá chung), `technician_skills`, `app_settings` (1 dòng).
+- `shift_schedules` (lịch ca theo ngày do admin xếp: sáng / chiều / full / nghỉ) · `shift_checkins` (vào/ra ca thực tế – KTV chọn ca khi bấm Vào ca; nếu admin đã xếp lịch thì chọn sẵn).
 - `tours` → `tour_items` (chụp giá + thời lượng lúc tạo) → `tour_assignments` (KTV + `share_percent` + `earned_amount`) · `tour_offers` · `tour_audit_logs` · `admin_alerts`.
 - `announcements` + `announcement_recipients` · `push_subscriptions` · `payroll_periods` · `earning_disputes`.
 - View `earning_lines` / `earnings_daily` / `earnings_monthly`, function `technician_earnings(technician_id, from, to)`.
@@ -151,8 +151,8 @@ Kiểm thử nghiệp vụ trên DB: dán `supabase/tests/smoke.sql` vào SQL Ed
 ## 6. Hướng dẫn vận hành nhanh cho admin
 
 1. **Nhập bảng giá** (Bảng giá dịch vụ): tên, tiền tour, thời lượng, đánh dấu "cần kỹ năng riêng" cho HIFU / tiêm…
-2. **Tạo tài khoản KTV** (Kỹ thuật viên): gán kỹ năng riêng, ca mặc định. Gửi tên đăng nhập + mật khẩu tạm cho KTV.
-3. **Xếp lịch ca** (Lịch ca) nếu muốn: bấm ô để đổi Sáng → Chiều → Full → Nghỉ.
+2. **Tạo tài khoản KTV** (Kỹ thuật viên): họ tên, tên đăng nhập, mật khẩu tạm, kỹ năng riêng (không cần chọn ca). Gửi tên đăng nhập + mật khẩu tạm cho KTV.
+3. **Ca làm theo ngày**: KTV tự chọn ca khi bấm *Vào ca*. Nếu muốn xếp trước, vào **Lịch ca** bấm ô để đổi — → Sáng → Chiều → Full → Nghỉ; ca đã xếp sẽ được chọn sẵn khi KTV vào ca (KTV vẫn đổi được).
 4. Hướng dẫn KTV **cài app vào màn hình chính và bật thông báo**: trang `/huong-dan`.
 5. Hằng ngày: KTV bấm **Vào ca** → admin **Tạo tour** → theo dõi Bảng điều phối (cảnh báo có âm thanh khi KTV từ chối / hết giờ).
 6. Cuối tháng: **Chốt lương** → xử lý báo sai (mở tour để sửa có lý do) → **Xuất Excel** → **Chốt sổ**.

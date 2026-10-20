@@ -26,7 +26,6 @@ const createSchema = z.object({
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone: phoneSchema,
   role: z.enum(["technician", "manager"]),
-  shift: z.enum(["morning", "afternoon", "full", "off"]).default("morning"),
   skill_ids: z.array(z.uuid()).default([]),
 });
 const bootstrapSchema = createSchema.extend({ action: z.literal("bootstrap_owner"), role: z.literal("owner") });
@@ -152,7 +151,7 @@ async function createAccount(sb: ReturnType<typeof serviceClient>, input: Create
     username: input.username,
     phone: input.phone ?? null,
     role: input.role,
-    shift: input.shift,
+    // không có ca cố định: ca xác định theo từng ngày (Lịch ca / lúc vào ca)
   });
   if (profileError) {
     await sb.auth.admin.deleteUser(created.user.id); // hoàn tác

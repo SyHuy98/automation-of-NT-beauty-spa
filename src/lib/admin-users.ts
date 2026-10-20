@@ -11,7 +11,6 @@ export type AdminUsersBody =
       full_name: string;
       phone?: string;
       role: "technician" | "manager";
-      shift: "morning" | "afternoon" | "full" | "off";
       skill_ids: string[];
     }
   | { action: "reset_password"; id: string; password: string }

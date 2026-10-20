@@ -24,8 +24,8 @@ export interface DashboardTechnician {
   id: string;
   fullName: string;
   username: string;
-  defaultShift: ShiftType;
-  scheduledShift: ShiftType;
+  /** Ca theo Lịch ca hôm nay; null = chưa xếp */
+  scheduledShift: ShiftType | null;
   checkin: { shift: ShiftType; checkInAt: string; checkOutAt: string | null } | null;
   offer: { id: string; tourId: string; code: string; customerName: string; offeredAt: string; expiresAt: string } | null;
   work: {
@@ -112,8 +112,9 @@ export interface MyTourInfo {
 export interface MySnapshot {
   now: string;
   today: string;
-  profile: { id: string; fullName: string; username: string; defaultShift: ShiftType };
-  scheduledShift: ShiftType;
+  profile: { id: string; fullName: string; username: string };
+  /** Ca theo Lịch ca hôm nay; null = chưa xếp */
+  scheduledShift: ShiftType | null;
   settings: { offerTimeoutSeconds: number; declineReasons: string[]; shiftHours: ShiftHours };
   checkin: { shift: ShiftType; checkInAt: string; checkOutAt: string | null } | null;
   offer: {

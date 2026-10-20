@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { formatMoney, initials } from "@/lib/format";
 import { TECH_STATUS_LABEL, type TechStatus } from "@/types/app";
@@ -56,18 +57,42 @@ export function Badge({ children, tone = "neutral", className }: { children: Rea
   );
 }
 
-export function Avatar({ name, status, size = "md" }: { name: string; status?: TechStatus; size?: "sm" | "md" | "lg" }) {
-  const dims = { sm: "h-9 w-9 text-xs", md: "h-12 w-12 text-sm", lg: "h-16 w-16 text-lg" }[size];
+const AVATAR_PX = { sm: 36, md: 48, lg: 64, xl: 96 } as const;
+
+/** Ảnh đại diện tròn viền vàng; chưa có ảnh thì hiện chữ cái đầu */
+export function Avatar({
+  name,
+  src,
+  status,
+  size = "md",
+}: {
+  name: string;
+  src?: string | null;
+  status?: TechStatus;
+  size?: keyof typeof AVATAR_PX;
+}) {
+  const dims = { sm: "h-9 w-9 text-xs", md: "h-12 w-12 text-sm", lg: "h-16 w-16 text-lg", xl: "h-24 w-24 text-2xl" }[size];
   return (
     <span className="relative inline-flex shrink-0">
       <span
         className={cn(
-          "inline-flex items-center justify-center rounded-full border-2 border-gold bg-cream font-serif font-semibold text-gold-stronger",
+          "inline-flex items-center justify-center overflow-hidden rounded-full border-2 border-gold bg-cream font-serif font-semibold text-gold-stronger",
           dims,
         )}
         aria-hidden="true"
       >
-        {initials(name)}
+        {src ? (
+          <Image
+            src={src}
+            alt=""
+            width={AVATAR_PX[size]}
+            height={AVATAR_PX[size]}
+            unoptimized
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials(name)
+        )}
       </span>
       {status ? (
         <span className="absolute -bottom-0.5 -right-0.5 rounded-full border-2 border-ivory">
