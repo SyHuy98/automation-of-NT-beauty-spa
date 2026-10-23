@@ -19,6 +19,7 @@ Toàn bộ giao diện tiếng Việt, tiền VND, mọi khái niệm "hôm nay 
 | CSDL, Auth, Realtime | Supabase (Postgres 17) – project `nt-beauty-spa` (Singapore) | RLS bật cho mọi bảng |
 | Logic ghi quan trọng | Postgres function (`accept_offer`, `complete_tour`…) | Transaction + `SELECT … FOR UPDATE` |
 | Hết hạn lời mời | `pg_cron` mỗi 20 giây + client gọi ngay khi đếm về 0 | Không phụ thuộc điện thoại KTV |
+| Dọn nhật ký cron | `pg_cron` 02:30 mỗi đêm xoá `cron.job_run_details` cũ hơn 7 ngày | Tránh đầy 500 MB gói Free (~1 MB/ngày nếu để nguyên) |
 | Tự chuyển người kế tiếp | Edge Function `dispatch` (gọi từ Postgres qua `pg_net`) | Dùng chung thuật toán `src/lib/assignment` |
 | Web Push | Edge Function `send-push` (VAPID) | Trigger khi có offer mới / thông báo mới |
 | Quản lý tài khoản | Edge Function `admin-users` | Dùng service role **có sẵn trong Supabase** |
