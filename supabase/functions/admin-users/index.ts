@@ -26,6 +26,8 @@ const createSchema = z.object({
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone: phoneSchema,
   role: z.enum(["technician", "manager"]),
+  // bắt buộc với KTV (ràng buộc profiles_technician_gender); quản lý thì bỏ qua
+  gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.uuid()).default([]),
 });
 const bootstrapSchema = createSchema.extend({ action: z.literal("bootstrap_owner"), role: z.literal("owner") });
@@ -151,6 +153,7 @@ async function createAccount(sb: ReturnType<typeof serviceClient>, input: Create
     username: input.username,
     phone: input.phone ?? null,
     role: input.role,
+    gender: input.role === "technician" ? (input.gender ?? "female") : null,
     // không có ca cố định: ca xác định theo từng ngày (Lịch ca / lúc vào ca)
   });
   if (profileError) {

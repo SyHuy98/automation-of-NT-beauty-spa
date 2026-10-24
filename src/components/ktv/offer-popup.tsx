@@ -9,7 +9,7 @@ import { CountdownRing, Money } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import { technicianAmount } from "@/lib/earnings";
 import { playChime, vibrate } from "@/lib/alerts";
-import { errorMessage, formatDuration, formatMinutes } from "@/lib/format";
+import { errorMessage, formatDuration, formatMinutes, GENDER_LABEL } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { MySnapshot } from "@/types/app";
@@ -132,6 +132,7 @@ function OfferCard({
           </h2>
           <div className="mt-1 flex flex-wrap items-center justify-center gap-2 text-sm text-mocha">
             <span>{t.code}</span>
+            {t.customerGender ? <span>· Khách {GENDER_LABEL[t.customerGender].toLowerCase()}</span> : null}
             {t.isRequested ? (
               <span className="inline-flex items-center gap-1 rounded-full border border-gold bg-champagne/50 px-2 py-0.5 font-semibold text-gold-stronger">
                 <Star className="h-3.5 w-3.5 fill-gold-strong" /> Chỉ định

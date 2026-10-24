@@ -65,6 +65,12 @@ export function CandidateList({
         </button>
       </div>
 
+      {result.genderFallback ? (
+        <p className="flex items-start gap-2 rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          Khách nam nhưng hiện không còn KTV nam nào rảnh – đang gợi ý KTV nữ.
+        </p>
+      ) : null}
       {result.message ? (
         <p className="rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">{result.message}</p>
       ) : null}

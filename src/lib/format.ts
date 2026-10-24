@@ -106,6 +106,8 @@ export const SHIFT_LABEL: Record<string, string> = {
   off: "Nghỉ",
 };
 
+export const GENDER_LABEL: Record<"male" | "female", string> = { male: "Nam", female: "Nữ" };
+
 export const ROLE_LABEL: Record<string, string> = {
   owner: "Chủ spa",
   manager: "Quản lý ca",

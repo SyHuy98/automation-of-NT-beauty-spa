@@ -29,6 +29,7 @@ export async function createTourAction(input: unknown): Promise<ActionResult<Cre
     p: {
       customer_name: v.customer_name,
       customer_phone: v.customer_phone || null,
+      customer_gender: v.customer_gender,
       note: v.note || null,
       service_ids: v.service_ids,
       assign_mode: v.assign_mode,

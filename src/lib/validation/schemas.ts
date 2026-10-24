@@ -30,12 +30,14 @@ export const memberCreateSchema = z.object({
   password: passwordSchema,
   phone,
   role: z.enum(["technician", "manager"]),
+  gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.string().uuid()),
 });
 
 export const memberUpdateSchema = z.object({
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone,
+  gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.string().uuid()),
 });
 
@@ -59,6 +61,7 @@ export const tourCreateSchema = z
   .object({
     customer_name: z.string().trim().min(1, "Vui lòng nhập tên khách").max(120),
     customer_phone: phone,
+    customer_gender: z.enum(["male", "female"]),
     note: z.string().trim().max(1000, "Ghi chú tối đa 1000 ký tự"),
     service_ids: z.array(z.string().uuid()).min(1, "Chọn ít nhất 1 dịch vụ").max(10, "Tối đa 10 dịch vụ"),
     assign_mode: z.enum(["suggest", "auto", "random", "requested"]),

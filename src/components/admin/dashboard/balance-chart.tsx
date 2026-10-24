@@ -5,18 +5,26 @@ import { Bar, BarChart, CartesianGrid, Cell, ReferenceLine, ResponsiveContainer,
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/form";
 import { formatMoney, formatMoneyShort } from "@/lib/format";
-import type { DashboardTechnician } from "@/types/app";
+import type { DashboardTechnician, Gender } from "@/types/app";
 
 /**
  * Biểu đồ cân bằng thu nhập giữa các KTV (hôm nay / tháng này).
+ * KTV nam và nữ là 2 nhóm riêng (khách nam → KTV nam, khách nữ → KTV nữ) nên
+ * mỗi nhóm có trung bình riêng.
  * Đường ngang = trung bình nhóm; cột đỏ gạch = lệch trên TB quá ngưỡng,
  * cột xám = thấp hơn TB quá ngưỡng.
  */
 export function BalanceChart({ technicians, thresholdPercent }: { technicians: DashboardTechnician[]; thresholdPercent: number }) {
   const [range, setRange] = useState<"today" | "month">("month");
+  const hasMale = technicians.some((t) => t.gender === "male");
+  const hasFemale = technicians.some((t) => t.gender !== "male");
+  const [pickedGroup, setGroup] = useState<Gender>("female");
+  // chỉ có 1 nhóm thì luôn hiện nhóm đó
+  const group: Gender = hasMale && hasFemale ? pickedGroup : hasMale ? "male" : "female";
 
   const { rows, avg } = useMemo(() => {
-    const rows = technicians.map((t) => ({
+    const members = technicians.filter((t) => (t.gender === "male" ? "male" : "female") === group);
+    const rows = members.map((t) => ({
       name: shortName(t.fullName),
       fullName: t.fullName,
       value: range === "today" ? t.todayAmount : t.monthAmount,
@@ -24,7 +32,7 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
     }));
     const avg = rows.length ? rows.reduce((s, r) => s + r.value, 0) / rows.length : 0;
     return { rows: rows.sort((a, b) => b.value - a.value), avg };
-  }, [technicians, range]);
+  }, [technicians, range, group]);
 
   const hi = avg * (1 + thresholdPercent / 100);
   const lo = avg * (1 - thresholdPercent / 100);
@@ -36,15 +44,28 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
         title="Cân bằng thu nhập"
         subtitle={`Đánh dấu KTV lệch quá ±${thresholdPercent}% so với trung bình`}
         action={
-          <Segmented
-            ariaLabel="Khoảng thời gian"
-            value={range}
-            onChange={setRange}
-            options={[
-              { value: "today", label: "Hôm nay" },
-              { value: "month", label: "Tháng này" },
-            ]}
-          />
+          <div className="flex flex-wrap justify-end gap-2">
+            {hasMale && hasFemale ? (
+              <Segmented<Gender>
+                ariaLabel="Nhóm KTV"
+                value={group}
+                onChange={setGroup}
+                options={[
+                  { value: "female", label: "KTV nữ" },
+                  { value: "male", label: "KTV nam" },
+                ]}
+              />
+            ) : null}
+            <Segmented
+              ariaLabel="Khoảng thời gian"
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: "today", label: "Hôm nay" },
+                { value: "month", label: "Tháng này" },
+              ]}
+            />
+          </div>
         }
       />
       <CardBody>
@@ -53,7 +74,7 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
         ) : (
           <>
             <p className="mb-2 text-sm text-mocha">
-              Trung bình nhóm: <strong className="tabular text-espresso">{formatMoney(Math.round(avg))}</strong>
+              Trung bình nhóm {group === "male" ? "KTV nam" : "KTV nữ"}: <strong className="tabular text-espresso">{formatMoney(Math.round(avg))}</strong>
             </p>
             <div className="h-72" role="img" aria-label="Biểu đồ thu nhập theo KTV">
               <ResponsiveContainer width="100%" height="100%">

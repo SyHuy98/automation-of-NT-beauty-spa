@@ -11,6 +11,7 @@ export type AdminUsersBody =
       full_name: string;
       phone?: string;
       role: "technician" | "manager";
+      gender?: "male" | "female";
       skill_ids: string[];
     }
   | { action: "reset_password"; id: string; password: string }

@@ -9,9 +9,9 @@ import { Checkbox, Field, Input, Segmented, Select, Textarea } from "@/component
 import { useToast } from "@/components/ui/toast";
 import { pickAuto, pickWeightedRandom, type RankedCandidate } from "@/lib/assignment";
 import { playAlert } from "@/lib/alerts";
-import { ASSIGN_MODE_LABEL } from "@/lib/format";
+import { ASSIGN_MODE_LABEL, GENDER_LABEL } from "@/lib/format";
 import { tourCreateSchema, fieldErrors } from "@/lib/validation/schemas";
-import { techStatus, TECH_STATUS_LABEL, type AssignMode, type DashboardTechnician } from "@/types/app";
+import { techStatus, TECH_STATUS_LABEL, type AssignMode, type DashboardTechnician, type Gender } from "@/types/app";
 import { useServices } from "../use-dashboard";
 import { CandidateList } from "./candidate-list";
 import { ServicePicker } from "./service-picker";
@@ -45,6 +45,7 @@ function CreateTourBody({
   const { services } = useServices();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [gender, setGender] = useState<Gender>("female");
   const [note, setNote] = useState("");
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [mode, setMode] = useState<AssignMode>("suggest");
@@ -58,7 +59,12 @@ function CreateTourBody({
   const [submitting, setSubmitting] = useState(false);
 
   const needRanking = open && serviceIds.length > 0 && mode !== "requested";
-  const ranking = useRanking(serviceIds, null, needRanking || (open && mode === "requested" && pair && serviceIds.length > 0));
+  const ranking = useRanking(
+    serviceIds,
+    null,
+    needRanking || (open && mode === "requested" && pair && serviceIds.length > 0),
+    gender,
+  );
 
   const requestedTech = technicians.find((t) => t.id === requestedId);
   const requestedStatus = requestedTech ? techStatus(requestedTech) : null;
@@ -75,6 +81,7 @@ function CreateTourBody({
     const payload = {
       customer_name: name,
       customer_phone: phone,
+      customer_gender: gender,
       note,
       service_ids: serviceIds,
       assign_mode: modeOverride ?? mode,
@@ -193,6 +200,29 @@ function CreateTourBody({
 
         <div>
           <p className="mb-2 text-sm font-medium text-mocha">
+            Khách <span className="text-busy-ink">*</span>
+          </p>
+          <Segmented<Gender>
+            ariaLabel="Giới tính khách"
+            value={gender}
+            onChange={(g) => {
+              setGender(g);
+              setSelected([]);
+            }}
+            options={[
+              { value: "female", label: "Khách nữ" },
+              { value: "male", label: "Khách nam" },
+            ]}
+          />
+          <p className="mt-1 text-sm text-mocha">
+            {gender === "female"
+              ? "Chỉ phân cho KTV nữ."
+              : "Ưu tiên KTV nam; không còn KTV nam rảnh thì mới gợi ý KTV nữ."}
+          </p>
+        </div>
+
+        <div>
+          <p className="mb-2 text-sm font-medium text-mocha">
             Dịch vụ <span className="text-busy-ink">*</span>
           </p>
           <ServicePicker services={services ?? []} selected={serviceIds} onChange={setServiceIds} error={errors.service_ids} />
@@ -255,12 +285,18 @@ function CreateTourBody({
                   <option value="">— Chọn KTV —</option>
                   {technicians.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.fullName} ({TECH_STATUS_LABEL[techStatus(t)]})
+                      {t.fullName} · {GENDER_LABEL[t.gender]} ({TECH_STATUS_LABEL[techStatus(t)]})
                     </option>
                   ))}
                 </Select>
               )}
             </Field>
+            {requestedTech && gender === "female" && requestedTech.gender === "male" ? (
+              <p className="flex items-start gap-2 rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                Khách nữ chỉ định KTV nam – vẫn tạo được vì khách đã chọn.
+              </p>
+            ) : null}
             {requestedTech && requestedStatus !== "free" ? (
               <p className="flex items-start gap-2 rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

@@ -10,6 +10,7 @@
  */
 
 export type ShiftKey = "morning" | "afternoon" | "full";
+export type Gender = "male" | "female";
 
 export interface AssignmentWeights {
   /** Thu nhập hôm nay (đã chuẩn hoá theo giờ làm) càng thấp càng ưu tiên – yếu tố chính */
@@ -38,6 +39,8 @@ export const DEFAULT_WEIGHTS: AssignmentWeights = {
 export interface TechnicianSnapshot {
   id: string;
   fullName: string;
+  /** Giới tính KTV; thiếu thì coi là nữ */
+  gender?: Gender | null;
   isActive: boolean;
   checkedIn: boolean;
   isFree: boolean;
@@ -58,6 +61,11 @@ export interface AssignmentSnapshot {
   now: string;
   durationMinutes: number;
   requiredSkillServiceIds: string[];
+  /**
+   * Giới tính khách. Nữ → chỉ KTV nữ. Nam → chỉ KTV nam, nếu không còn KTV nam
+   * nào phù hợp thì chuyển sang KTV nữ. Không có → không lọc theo giới tính.
+   */
+  customerGender?: Gender | null;
   settings: {
     weights: Partial<AssignmentWeights>;
     requestedThresholdPercent: number;
@@ -100,7 +108,12 @@ export interface RankResult {
   excluded: ExcludedTechnician[];
   /** Thông báo cho admin khi không còn ai phù hợp */
   message: string | null;
+  /** TB tháng của nhóm giới tính đang xét (nhóm của các ứng viên) */
   groupMonthAverage: number;
+  /** TB tháng riêng từng nhóm – mỗi KTV chỉ so với người cùng giới tính */
+  groupMonthAverages: Record<Gender, number>;
+  /** Khách nam nhưng không còn KTV nam phù hợp → đang xếp KTV nữ */
+  genderFallback: boolean;
 }
 
 const DEFAULT_SHIFT_HOURS: Record<ShiftKey, { start: string; end: string }> = {
@@ -133,6 +146,12 @@ function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
 }
 
+export function genderOf(t: Pick<TechnicianSnapshot, "gender">): Gender {
+  return t.gender === "male" ? "male" : "female";
+}
+
+export const GENDER_LABEL: Record<Gender, string> = { male: "Nam", female: "Nữ" };
+
 function round1(v: number): number {
   // `|| 0` để không ra -0
   return Math.round(v * 10) / 10 || 0;
@@ -160,27 +179,64 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
   const threshold = snapshot.settings.requestedThresholdPercent / 100;
   const vnDate = vnDateString(nowMs);
 
-  // Trung bình nhóm = mọi KTV đang hoạt động (kể cả đang bận / chưa vào ca)
+  // Trung bình nhóm = mọi KTV đang hoạt động (kể cả đang bận / chưa vào ca),
+  // tính RIÊNG từng giới tính: KTV nam chỉ so với nam, nữ chỉ so với nữ.
   const activeTechs = snapshot.technicians.filter((t) => t.isActive);
-  const groupMonthAverage =
-    activeTechs.length > 0
-      ? activeTechs.reduce((s, t) => s + t.monthEarnings, 0) / activeTechs.length
-      : 0;
+  const avgOf = (g: Gender) => {
+    const group = activeTechs.filter((t) => genderOf(t) === g);
+    return group.length > 0 ? group.reduce((s, t) => s + t.monthEarnings, 0) / group.length : 0;
+  };
+  const groupMonthAverages: Record<Gender, number> = { male: avgOf("male"), female: avgOf("female") };
 
   const excluded: ExcludedTechnician[] = [];
-  const eligible: TechnicianSnapshot[] = [];
+  let eligible: TechnicianSnapshot[] = [];
   for (const t of snapshot.technicians) {
     const reason = exclusionReason(t, snapshot.requiredSkillServiceIds);
     if (reason) excluded.push({ technicianId: t.id, fullName: t.fullName, reason });
     else eligible.push(t);
   }
 
+  // Lọc theo giới tính khách
+  let genderFallback = false;
+  const customerGender = snapshot.customerGender ?? null;
+  if (customerGender === "female") {
+    for (const t of eligible.filter((t) => genderOf(t) === "male")) {
+      excluded.push({ technicianId: t.id, fullName: t.fullName, reason: "Khách nữ – chỉ phân KTV nữ" });
+    }
+    eligible = eligible.filter((t) => genderOf(t) === "female");
+  } else if (customerGender === "male") {
+    const males = eligible.filter((t) => genderOf(t) === "male");
+    if (males.length > 0) {
+      for (const t of eligible.filter((t) => genderOf(t) === "female")) {
+        excluded.push({ technicianId: t.id, fullName: t.fullName, reason: "Khách nam – còn KTV nam rảnh" });
+      }
+      eligible = males;
+    } else {
+      genderFallback = eligible.length > 0;
+    }
+  }
+
+  // TB hiển thị = nhóm của các ứng viên (khách nam → nam, trừ khi chuyển KTV nữ)
+  const shownGender: Gender | null =
+    customerGender === "male" && !genderFallback ? "male" : customerGender ? "female" : null;
+  const groupMonthAverage =
+    shownGender !== null
+      ? groupMonthAverages[shownGender]
+      : activeTechs.length > 0
+        ? activeTechs.reduce((s, t) => s + t.monthEarnings, 0) / activeTechs.length
+        : 0;
+
   if (eligible.length === 0) {
     return {
       candidates: [],
       excluded,
-      message: "Hiện không có KTV nào rảnh và phù hợp cho tour này",
+      message:
+        customerGender === "female"
+          ? "Hiện không có KTV nữ nào rảnh và phù hợp cho tour này"
+          : "Hiện không có KTV nào rảnh và phù hợp cho tour này",
       groupMonthAverage,
+      groupMonthAverages,
+      genderFallback: false,
     };
   }
 
@@ -208,20 +264,22 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
     const { t } = c;
     const reasons: string[] = [];
     const warnings: string[] = [];
+    // So với TB của nhóm cùng giới tính
+    const groupAvg = customerGender === null ? groupMonthAverage : groupMonthAverages[genderOf(t)];
 
     // 1) Hôm nay: 1 = thấp nhất nhóm, 0 = cao nhất
     const todayScore = maxRate > 0 ? 1 - c.rate / maxRate : 1;
 
     // 2) Tháng so với TB nhóm: dưới TB → cộng, trên TB → trừ
-    const monthDiff = groupMonthAverage > 0 ? (t.monthEarnings - groupMonthAverage) / groupMonthAverage : 0;
+    const monthDiff = groupAvg > 0 ? (t.monthEarnings - groupAvg) / groupAvg : 0;
     const monthScore = -clamp(monthDiff, -1, 1);
 
     // 3) Phạt lệch do tour chỉ định: chỉ khi tháng vượt TB*(1+ngưỡng) và có tiền tour chỉ định
     let requestedPenalty = 0;
-    if (groupMonthAverage > 0 && t.monthRequestedEarnings > 0) {
-      const overshoot = t.monthEarnings - groupMonthAverage * (1 + threshold);
+    if (groupAvg > 0 && t.monthRequestedEarnings > 0) {
+      const overshoot = t.monthEarnings - groupAvg * (1 + threshold);
       if (overshoot > 0) {
-        requestedPenalty = clamp(Math.min(overshoot, t.monthRequestedEarnings) / groupMonthAverage, 0, 1);
+        requestedPenalty = clamp(Math.min(overshoot, t.monthRequestedEarnings) / groupAvg, 0, 1);
       }
     }
 
@@ -253,11 +311,13 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
       `Hôm nay ${formatVndPlain(t.todayEarnings)}${t.todayEarnings === minToday && ctx.length > 1 ? " (thấp nhất)" : ""}`,
     );
     const monthPct = Math.round(Math.abs(monthDiff) * 100);
-    if (groupMonthAverage <= 0 || monthPct === 0) reasons.push("Tháng bằng TB");
-    else reasons.push(`Tháng ${monthDiff < 0 ? "dưới" : "trên"} TB ${monthPct}%`);
+    const groupLabel = customerGender === null ? "" : ` ${GENDER_LABEL[genderOf(t)].toLowerCase()}`;
+    if (groupAvg <= 0 || monthPct === 0) reasons.push(`Tháng bằng TB${groupLabel}`);
+    else reasons.push(`Tháng ${monthDiff < 0 ? "dưới" : "trên"} TB${groupLabel} ${monthPct}%`);
     if (c.shift === "afternoon" && c.hoursWorked < 4) {
       reasons.push(`Ca chiều, mới làm ${Math.round(c.hoursWorked * 10) / 10} giờ`);
     }
+    if (genderFallback) warnings.push("Khách nam – không còn KTV nam rảnh");
     if (requestedPenalty > 0) warnings.push("Tiền tour chỉ định đang vượt TB nhóm");
     if (nearShiftEnd) {
       warnings.push(`Sắp hết ca (còn ${Math.max(0, c.shiftRemainingMinutes)} phút)`);
@@ -279,7 +339,7 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
   });
 
   candidates.sort((a, b) => b.score - a.score || b.idleMinutes - a.idleMinutes || a.fullName.localeCompare(b.fullName));
-  return { candidates, excluded, message: null, groupMonthAverage };
+  return { candidates, excluded, message: null, groupMonthAverage, groupMonthAverages, genderFallback };
 }
 
 /** Chế độ Tự động: người điểm cao nhất */

@@ -6,6 +6,7 @@ export type TourStatus = Database["public"]["Enums"]["tour_status"];
 export type AssignMode = Database["public"]["Enums"]["assign_mode"];
 export type AssignmentStatus = Database["public"]["Enums"]["assignment_status"];
 export type UserRole = Database["public"]["Enums"]["user_role"];
+export type Gender = Database["public"]["Enums"]["gender_type"];
 export type ServiceRow = Database["public"]["Tables"]["services"]["Row"];
 export type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export type SettingsRow = Database["public"]["Tables"]["app_settings"]["Row"];
@@ -24,6 +25,7 @@ export interface DashboardTechnician {
   id: string;
   fullName: string;
   username: string;
+  gender: Gender;
   /** Ca theo Lịch ca hôm nay; null = chưa xếp */
   scheduledShift: ShiftType | null;
   checkin: { shift: ShiftType; checkInAt: string; checkOutAt: string | null } | null;
@@ -50,6 +52,7 @@ export interface DashboardTour {
   code: string;
   customerName: string;
   customerPhone: string | null;
+  customerGender: Gender;
   note: string | null;
   status: TourStatus;
   assignMode: AssignMode;
@@ -101,6 +104,7 @@ export interface MyTourInfo {
   id: string;
   code: string;
   customerName: string;
+  customerGender: Gender;
   note: string | null;
   isRequested: boolean;
   teamSize: number;

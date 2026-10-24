@@ -8,7 +8,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/form";
 import { Avatar, Money, StatusBadge } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
-import { errorMessage, formatDuration, formatTime, SHIFT_LABEL } from "@/lib/format";
+import { errorMessage, formatDuration, formatTime, GENDER_LABEL, SHIFT_LABEL } from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type TechStatus } from "@/types/app";
@@ -176,7 +176,9 @@ function TechCard({
         <Avatar name={t.fullName} src={avatarUrl} status={status} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-espresso">{t.fullName}</p>
-          <p className="text-xs text-mocha">{shiftLabel}</p>
+          <p className="text-xs text-mocha">
+            {GENDER_LABEL[t.gender]} · {shiftLabel}
+          </p>
         </div>
         <StatusBadge status={status} />
       </div>

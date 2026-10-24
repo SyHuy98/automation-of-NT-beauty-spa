@@ -221,6 +221,63 @@ describe("rankTechnicians – chấm điểm", () => {
   });
 });
 
+describe("rankTechnicians – giới tính", () => {
+  const team = () => [
+    tech({ id: "nu1", gender: "female", monthEarnings: 3_000_000 }),
+    tech({ id: "nu2", gender: "female", monthEarnings: 5_000_000 }),
+    tech({ id: "nam1", gender: "male", monthEarnings: 1_000_000 }),
+    tech({ id: "nam2", gender: "male", monthEarnings: 2_000_000 }),
+  ];
+
+  it("khách nữ: chỉ KTV nữ, KTV nam bị loại kèm lý do", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "female" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nu1", "nu2"]);
+    expect(r.excluded.find((e) => e.technicianId === "nam1")?.reason).toContain("Khách nữ");
+    expect(r.genderFallback).toBe(false);
+  });
+
+  it("khách nam: chỉ KTV nam khi còn KTV nam rảnh", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "male" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nam1", "nam2"]);
+    expect(r.genderFallback).toBe(false);
+  });
+
+  it("khách nam: không còn KTV nam rảnh → chuyển KTV nữ + cảnh báo", () => {
+    const techs = team().map((t) => (t.gender === "male" ? { ...t, isFree: false, busyReason: "Đang làm tour" } : t));
+    const r = rankTechnicians(snapshot(techs, { customerGender: "male" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nu1", "nu2"]);
+    expect(r.genderFallback).toBe(true);
+    expect(r.candidates[0].warnings.join(" ")).toContain("không còn KTV nam");
+  });
+
+  it("khách nữ mà không còn KTV nữ rảnh → không chuyển KTV nam", () => {
+    const techs = team().map((t) => (t.gender === "female" ? { ...t, checkedIn: false } : t));
+    const r = rankTechnicians(snapshot(techs, { customerGender: "female" }));
+    expect(r.candidates).toEqual([]);
+    expect(r.message).toContain("KTV nữ");
+  });
+
+  it("trung bình tháng tính riêng từng nhóm giới tính", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "male" }));
+    expect(r.groupMonthAverages).toEqual({ male: 1_500_000, female: 4_000_000 });
+    expect(r.groupMonthAverage).toBe(1_500_000);
+    // nam1 1tr so với TB nam 1,5tr → dưới TB 33% (không bị so với nữ)
+    const nam1 = r.candidates.find((c) => c.technicianId === "nam1")!;
+    expect(nam1.monthDiffPercent).toBe(-33);
+    expect(nam1.reasons.join(" ")).toContain("dưới TB nam 33%");
+  });
+
+  it("thiếu thông tin giới tính KTV → coi là nữ", () => {
+    const r = rankTechnicians(snapshot([tech({ id: "x" }), tech({ id: "m", gender: "male" })], { customerGender: "female" }));
+    expect(r.candidates.map((c) => c.technicianId)).toEqual(["x"]);
+  });
+
+  it("không có giới tính khách → không lọc (giữ hành vi cũ)", () => {
+    const r = rankTechnicians(snapshot(team()));
+    expect(r.candidates).toHaveLength(4);
+  });
+});
+
 describe("chế độ phân", () => {
   const result = rankTechnicians(
     snapshot([
