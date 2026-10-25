@@ -31,7 +31,11 @@ export function Dialog({
         <RD.Overlay className="fixed inset-0 z-50 bg-espresso/40 backdrop-blur-[2px] animate-fade-in" />
         <RD.Content
           onPointerDownOutside={(e) => !dismissible && e.preventDefault()}
-          onEscapeKeyDown={(e) => !dismissible && e.preventDefault()}
+          onEscapeKeyDown={(e) => {
+            // Ô có danh sách xổ xuống đang mở (data-esc-local) tự xử lý Esc – không đóng cả hộp thoại
+            const local = document.activeElement?.closest?.('[data-esc-local="true"]');
+            if (!dismissible || local) e.preventDefault();
+          }}
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 max-h-[92dvh] w-full overflow-hidden rounded-t-3xl border border-champagne bg-ivory shadow-lift animate-slide-up",
             "sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl",
