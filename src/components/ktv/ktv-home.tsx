@@ -14,6 +14,7 @@ import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatDate, formatDuration, formatTime, SHIFT_LABEL } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
+import { formatDateRange } from "@/lib/pay-period";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { ShiftType, TechStatus } from "@/types/app";
 import { useSession } from "../shared/session-context";
@@ -194,9 +195,11 @@ export function KtvHome() {
           <p className="text-xs text-mocha">{data.todayTours} tour</p>
         </div>
         <div className="rounded-3xl border border-gold/60 bg-champagne/30 p-4 shadow-soft">
-          <p className="text-sm text-mocha">Tháng này</p>
+          <p className="text-sm text-mocha">{data.period.startDay > 1 ? "Kỳ này" : "Tháng này"}</p>
           <Money value={data.monthAmount} className="mt-1 block font-serif text-2xl font-semibold text-espresso" />
-          <p className="text-xs text-mocha">{data.monthTours} tour</p>
+          <p className="text-xs text-mocha">
+            {data.monthTours} tour · {formatDateRange(data.period.from, data.period.to)}
+          </p>
         </div>
       </section>
 

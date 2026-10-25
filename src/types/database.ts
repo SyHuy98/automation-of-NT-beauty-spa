@@ -141,6 +141,7 @@ export type Database = {
           id: boolean
           imbalance_threshold_percent: number
           overdue_alert_minutes: number
+          payroll_start_day: number
           offer_timeout_seconds: number
           random_pool_size: number
           requested_threshold_percent: number
@@ -154,6 +155,7 @@ export type Database = {
           id?: boolean
           imbalance_threshold_percent?: number
           overdue_alert_minutes?: number
+          payroll_start_day?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -167,6 +169,7 @@ export type Database = {
           id?: boolean
           imbalance_threshold_percent?: number
           overdue_alert_minutes?: number
+          payroll_start_day?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -1039,6 +1042,21 @@ export type Database = {
         Returns: undefined
       }
       my_snapshot: { Args: never; Returns: Json }
+      earnings_summary: {
+        Args: { p_from: string; p_to: string }
+        Returns: {
+          amount: number
+          full_name: string
+          is_active: boolean
+          requested_amount: number
+          requested_tours: number
+          technician_id: string
+          tours: number
+          username: string
+        }[]
+      }
+      pay_period_of_date: { Args: { d: string }; Returns: string }
+      payroll_start_day: { Args: never; Returns: number }
       payroll_summary: {
         Args: { p_month: string }
         Returns: {

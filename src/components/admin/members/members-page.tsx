@@ -11,7 +11,9 @@ import { Avatar, Badge } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { adminUsers } from "@/lib/admin-users";
-import { GENDER_LABEL, vnMonthStart, vnToday } from "@/lib/format";
+import { GENDER_LABEL, vnToday } from "@/lib/format";
+import { usePayPeriodSettings } from "@/lib/hooks/use-pay-period";
+import { payPeriodRange } from "@/lib/pay-period";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { passwordSchema } from "@/lib/validation/schemas";
@@ -39,14 +41,18 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
   const [lockFor, setLockFor] = useState<ProfileRow | null>(null);
   const [deleteFor, setDeleteFor] = useState<ProfileRow | null>(null);
 
+  // Thống kê lời mời tính từ đầu kỳ lương hiện tại
+  const pp = usePayPeriodSettings();
+  const periodFrom = pp ? payPeriodRange(pp.currentPeriod, pp.startDay).from : null;
+
   const query = useQuery(async () => {
     const supabase = getSupabaseBrowser();
     const [m, s, sv, st] = await Promise.all([
       supabase.from("profiles").select("*").eq("role", role).order("is_active", { ascending: false }).order("full_name"),
       supabase.from("technician_skills").select("technician_id, service_id"),
       supabase.from("services").select("*").order("sort_order").order("name"),
-      role === "technician"
-        ? supabase.rpc("technician_response_stats", { p_from: vnMonthStart(), p_to: vnToday() })
+      role === "technician" && periodFrom
+        ? supabase.rpc("technician_response_stats", { p_from: periodFrom!, p_to: vnToday() })
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (m.error) throw m.error;
@@ -58,7 +64,7 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
       services: (sv.data ?? []) as ServiceRow[],
       stats: new Map(((st.data ?? []) as Array<Stats & { technician_id: string }>).map((r) => [r.technician_id, r])),
     };
-  }, [role]);
+  }, [role, periodFrom]);
   const { error, refetch: load } = query;
   const members = query.data?.members ?? null;
   const skills = query.data?.skills ?? EMPTY_MAP;
@@ -108,7 +114,7 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
                     </div>
                     {st ? (
                       <p className="text-sm text-mocha">
-                        Tháng này: {st.offers} lời mời · nhận {st.accepted} ·{" "}
+                        Kỳ này: {st.offers} lời mời · nhận {st.accepted} ·{" "}
                         <span className={st.declined > 0 ? "font-semibold text-busy-ink" : ""}>từ chối {st.declined}</span> ·{" "}
                         <span className={st.expired > 0 ? "font-semibold text-pending-ink" : ""}>hết giờ {st.expired}</span>
                       </p>

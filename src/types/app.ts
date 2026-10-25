@@ -87,9 +87,18 @@ export interface DashboardAlert {
   createdAt: string;
 }
 
+/** Kỳ lương: key = ngày 1 của tháng kết thúc kỳ; from/to tính cả 2 đầu */
+export interface PayPeriodInfo {
+  key: string;
+  from: string;
+  to: string;
+  startDay: number;
+}
+
 export interface DashboardSnapshot {
   now: string;
   today: string;
+  period: PayPeriodInfo;
   settings: {
     offerTimeoutSeconds: number;
     shiftHours: ShiftHours;
@@ -117,6 +126,7 @@ export interface MyTourInfo {
 export interface MySnapshot {
   now: string;
   today: string;
+  period: PayPeriodInfo;
   profile: { id: string; fullName: string; username: string };
   /** Ca theo Lịch ca hôm nay; null = chưa xếp */
   scheduledShift: ShiftType | null;

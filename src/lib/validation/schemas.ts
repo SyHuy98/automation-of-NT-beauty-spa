@@ -114,6 +114,7 @@ export const settingsSchema = z.object({
     declines: z.coerce.number().min(0).max(200),
   }),
   overdue_alert_minutes: z.coerce.number().int().min(1, "Tối thiểu 1 phút").max(240, "Tối đa 240 phút"),
+  payroll_start_day: z.coerce.number().int().min(1, "Từ 1 đến 28").max(28, "Từ 1 đến 28"),
   imbalance_threshold_percent: z.coerce.number().int().min(0).max(200),
   random_pool_size: z.coerce.number().int().min(1).max(10),
   decline_reasons: z.array(z.string().trim().min(1).max(100)).min(1, "Cần ít nhất 1 lý do").max(15),

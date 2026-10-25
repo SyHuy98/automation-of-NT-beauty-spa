@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Flag, Star } from "lucide-react";
+import { Flag, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorState } from "@/components/ui/card";
@@ -10,13 +10,15 @@ import { Badge, Money } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { summarizeEarnings } from "@/lib/earnings";
-import { addMonths, errorMessage, formatMonth, formatTime, formatWeekday, vnMonthStart, vnToday } from "@/lib/format";
+import { errorMessage, formatTime, formatWeekday, vnToday } from "@/lib/format";
+import { usePayPeriodSettings } from "@/lib/hooks/use-pay-period";
 import { useQuery } from "@/lib/hooks/use-query";
 import { useRealtime } from "@/lib/hooks/use-realtime";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { disputeSchema } from "@/lib/validation/schemas";
 import type { Database } from "@/types/database";
 import type { EarningLine } from "@/types/app";
+import { PeriodPicker, selectionLabel, selectionRange, type PeriodSelection } from "../shared/period-picker";
 import { useSession } from "../shared/session-context";
 
 type Dispute = Database["public"]["Tables"]["earning_disputes"]["Row"];
@@ -29,20 +31,34 @@ const DISPUTE_LABEL: Record<string, { label: string; tone: "pending" | "free" | 
 };
 
 export function KtvEarnings() {
+  const pp = usePayPeriodSettings();
+  if (!pp) return <LoadingBlock />;
+  return <KtvEarningsBody startDay={pp.startDay} currentPeriod={pp.currentPeriod} />;
+}
+
+function KtvEarningsBody({ startDay, currentPeriod }: { startDay: number; currentPeriod: string }) {
   const me = useSession();
   const toast = useToast();
-  const [month, setMonth] = useState(vnMonthStart());
+  const [sel, setSel] = useState<PeriodSelection>({ mode: "period", period: currentPeriod });
   const [reportFor, setReportFor] = useState<{ tourId: string | null; label: string } | null>(null);
+  // Báo sai gắn với kỳ lương; khi xem khoảng ngày tự chọn thì báo sai theo từng tour
+  const period = sel.mode === "period" ? sel.period : null;
+  const { from, to } = selectionRange(sel, startDay);
+  const label = selectionLabel(sel, startDay);
 
   const query = useQuery(async () => {
     const supabase = getSupabaseBrowser();
+    let lq = supabase.from("earning_lines").select("*").eq("technician_id", me.id);
+    lq = period ? lq.eq("month", period) : lq.gte("work_date", from).lte("work_date", to);
     const [l, d] = await Promise.all([
-      supabase.from("earning_lines").select("*").eq("technician_id", me.id).eq("month", month).order("completed_at", { ascending: false }),
-      supabase.from("earning_disputes").select("*").eq("technician_id", me.id).eq("month", month).order("created_at", { ascending: false }),
+      lq.order("completed_at", { ascending: false }),
+      period
+        ? supabase.from("earning_disputes").select("*").eq("technician_id", me.id).eq("month", period).order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] as Dispute[] }),
     ]);
     if (l.error) throw l.error;
     return { lines: l.data as EarningLine[], disputes: (d.data ?? []) as Dispute[] };
-  }, [me.id, month]);
+  }, [me.id, period, from, to]);
   const { error, refetch: load } = query;
   const lines = query.data?.lines ?? null;
   const disputes = query.data?.disputes ?? NO_DISPUTES;
@@ -66,22 +82,14 @@ export function KtvEarnings() {
     return [...map.entries()];
   }, [lines]);
 
-  const isCurrent = month === vnMonthStart();
+  const isCurrent = period === currentPeriod;
   const disputeByTour = new Map(disputes.filter((d) => d.tour_id).map((d) => [d.tour_id!, d]));
 
   return (
     <div className="space-y-5">
       <h1 className="font-serif text-2xl font-semibold text-espresso">Thu nhập</h1>
 
-      <div className="flex items-center justify-between rounded-2xl border border-champagne bg-white/80 px-2 py-1.5">
-        <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label="Tháng trước">
-          <ChevronLeft className="h-5 w-5" />
-        </Button>
-        <p className="font-semibold text-espresso">{formatMonth(month)}</p>
-        <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonths(m, 1))} disabled={isCurrent} aria-label="Tháng sau">
-          <ChevronRight className="h-5 w-5" />
-        </Button>
-      </div>
+      <PeriodPicker value={sel} onChange={setSel} startDay={startDay} currentPeriod={currentPeriod} />
 
       <div className="grid grid-cols-2 gap-3">
         {isCurrent ? (
@@ -91,7 +99,7 @@ export function KtvEarnings() {
           </div>
         ) : null}
         <div className={isCurrent ? "rounded-3xl border border-gold/60 bg-champagne/30 p-4" : "col-span-2 rounded-3xl border border-gold/60 bg-champagne/30 p-4"}>
-          <p className="text-sm text-mocha">{isCurrent ? "Tháng này" : formatMonth(month)}</p>
+          <p className="text-sm text-mocha">{isCurrent ? (startDay > 1 ? "Kỳ này" : "Tháng này") : label}</p>
           <Money value={summary.amount} className="mt-1 block font-serif text-2xl font-semibold" />
           <p className="text-xs text-mocha">
             {summary.tours} tour · {summary.requestedTours} chỉ định
@@ -99,9 +107,11 @@ export function KtvEarnings() {
         </div>
       </div>
 
-      <Button variant="secondary" className="w-full" onClick={() => setReportFor({ tourId: null, label: formatMonth(month) })}>
-        <Flag className="h-4 w-4" /> Báo sai cả tháng
-      </Button>
+      {period ? (
+        <Button variant="secondary" className="w-full" onClick={() => setReportFor({ tourId: null, label })}>
+          <Flag className="h-4 w-4" /> Báo sai cả kỳ
+        </Button>
+      ) : null}
 
       {disputes.length > 0 ? (
         <section className="space-y-2">
@@ -109,7 +119,7 @@ export function KtvEarnings() {
           {disputes.map((d) => (
             <div key={d.id} className="rounded-2xl border border-champagne bg-white/80 p-3 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-mocha">{d.tour_id ? "Theo tour" : "Cả tháng"}</span>
+                <span className="text-mocha">{d.tour_id ? "Theo tour" : "Cả kỳ"}</span>
                 <Badge tone={DISPUTE_LABEL[d.status].tone}>{DISPUTE_LABEL[d.status].label}</Badge>
               </div>
               <p className="mt-1 text-espresso">{d.message}</p>
@@ -123,7 +133,7 @@ export function KtvEarnings() {
       {!lines ? (
         <LoadingBlock />
       ) : lines.length === 0 ? (
-        <EmptyState title="Chưa có tour hoàn thành trong tháng" />
+        <EmptyState title="Chưa có tour hoàn thành trong khoảng thời gian này" />
       ) : (
         <section className="space-y-4">
           {byDay.map(([day, items]) => (
@@ -172,7 +182,7 @@ export function KtvEarnings() {
 
       <DisputeDialog
         target={reportFor}
-        month={month}
+        month={period ?? currentPeriod}
         onClose={() => setReportFor(null)}
         onSent={() => {
           toast.success("Đã gửi báo sai – quản lý sẽ kiểm tra");
