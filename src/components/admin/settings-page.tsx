@@ -31,6 +31,7 @@ interface FormState {
   shift_hours: Record<Shift, { start: string; end: string }>;
   weights: Record<keyof typeof DEFAULT_WEIGHTS, string>;
   overdue_alert_minutes: string;
+  payroll_start_day: string;
   imbalance_threshold_percent: string;
   random_pool_size: string;
   decline_reasons: string[];
@@ -57,6 +58,7 @@ export function SettingsPage() {
       },
       weights: Object.fromEntries(Object.entries(w).map(([k, v]) => [k, String(v)])) as FormState["weights"],
       overdue_alert_minutes: String(data.overdue_alert_minutes),
+      payroll_start_day: String(data.payroll_start_day),
       imbalance_threshold_percent: String(data.imbalance_threshold_percent),
       random_pool_size: String(data.random_pool_size),
       decline_reasons: data.decline_reasons,
@@ -117,6 +119,17 @@ export function SettingsPage() {
               </Field>
               <Field label="Số ứng viên vào vòng Random" error={errors.random_pool_size} hint="Chọn ngẫu nhiên trong top N">
                 {(p) => <Input {...p} inputMode="numeric" value={form.random_pool_size} onChange={(e) => set("random_pool_size", e.target.value)} />}
+              </Field>
+              <Field
+                label="Ngày bắt đầu kỳ lương"
+                error={errors.payroll_start_day}
+                hint={
+                  Number(form.payroll_start_day) > 1
+                    ? `Kỳ chốt tour: ngày ${form.payroll_start_day} tháng này → ngày ${Number(form.payroll_start_day) - 1} tháng sau. Nhập 1 = theo tháng lịch.`
+                    : "1 = theo tháng lịch (ngày 1 → cuối tháng)"
+                }
+              >
+                {(p) => <Input {...p} inputMode="numeric" value={form.payroll_start_day} onChange={(e) => set("payroll_start_day", e.target.value)} />}
               </Field>
               <Field
                 label="Nhắc tour quá giờ sau (phút)"

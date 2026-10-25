@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Lock, Star, Unlock } from "lucide-react";
+import { Download, Lock, Star, Unlock } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, EmptyState, ErrorState, PageHeader } from "@/components/ui/card";
@@ -11,11 +11,13 @@ import { Badge, Money } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { exportPayrollExcel, type PayrollSummaryRow } from "@/lib/export-excel";
-import { addMonths, errorMessage, formatDate, formatDateTime, formatMonth, formatTime, vnMonthStart } from "@/lib/format";
+import { errorMessage, formatDate, formatDateTime, formatTime } from "@/lib/format";
+import { usePayPeriodSettings } from "@/lib/hooks/use-pay-period";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import type { Database } from "@/types/database";
 import type { EarningLine } from "@/types/app";
+import { PeriodPicker, selectionLabel, selectionRange, type PeriodSelection } from "../shared/period-picker";
 import { useSession } from "../shared/session-context";
 import { useTourLookup } from "./tour-lookup";
 
@@ -26,10 +28,20 @@ type Dispute = Database["public"]["Tables"]["earning_disputes"]["Row"] & {
 };
 
 export function PayrollPage() {
+  const pp = usePayPeriodSettings();
+  if (!pp) return <LoadingBlock />;
+  return <PayrollBody startDay={pp.startDay} currentPeriod={pp.currentPeriod} />;
+}
+
+function PayrollBody({ startDay, currentPeriod }: { startDay: number; currentPeriod: string }) {
   const me = useSession();
   const isOwner = me.role === "owner";
   const toast = useToast();
-  const [month, setMonth] = useState(vnMonthStart());
+  const [sel, setSel] = useState<PeriodSelection>({ mode: "period", period: currentPeriod });
+  // Chốt sổ / báo sai gắn với kỳ lương; khoảng ngày tự chọn chỉ để xem & xuất Excel
+  const month = sel.mode === "period" ? sel.period : null;
+  const { from, to } = selectionRange(sel, startDay);
+  const label = selectionLabel(sel, startDay);
   const [detailFor, setDetailFor] = useState<SummaryRow | null>(null);
   const [confirmLock, setConfirmLock] = useState<"lock" | "unlock" | null>(null);
   const [resolving, setResolving] = useState<Dispute | null>(null);
@@ -38,6 +50,20 @@ export function PayrollPage() {
 
   const query = useQuery(async () => {
     const supabase = getSupabaseBrowser();
+    if (!month) {
+      // Khoảng ngày tự chọn
+      const [s, l] = await Promise.all([
+        supabase.rpc("earnings_summary", { p_from: from, p_to: to }),
+        supabase.from("earning_lines").select("*").gte("work_date", from).lte("work_date", to).order("completed_at"),
+      ]);
+      if (s.error) throw s.error;
+      return {
+        summary: (s.data ?? []).map((r) => ({ ...r, open_disputes: 0 })) as SummaryRow[],
+        lines: (l.data ?? []) as EarningLine[],
+        disputes: [] as Dispute[],
+        locked: null,
+      };
+    }
     const [s, l, d, p] = await Promise.all([
       supabase.rpc("payroll_summary", { p_month: month }),
       supabase.from("earning_lines").select("*").eq("month", month).order("completed_at"),
@@ -55,7 +81,7 @@ export function PayrollPage() {
       disputes: (d.data as unknown as Dispute[]) ?? [],
       locked: p.data ?? null,
     };
-  }, [month]);
+  }, [month, from, to]);
   const { error, refetch: load } = query;
   const summary = query.data?.summary ?? null;
   const lines = query.data?.lines ?? [];
@@ -73,7 +99,7 @@ export function PayrollPage() {
     if (!summary) return;
     setExporting(true);
     try {
-      await exportPayrollExcel(formatMonth(month), month, summary, lines);
+      await exportPayrollExcel(label, `${from}_${to}`, summary, lines);
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -84,23 +110,18 @@ export function PayrollPage() {
   return (
     <div>
       <PageHeader
-        title="Chốt lương tháng"
-        subtitle="Tổng tiền tour mỗi KTV, xử lý báo sai, chốt sổ và xuất Excel"
+        title="Chốt lương"
+        subtitle={
+          startDay > 1
+            ? `Kỳ chốt tour từ ngày ${startDay} tháng này đến ngày ${startDay - 1} tháng sau (đổi ở Cài đặt) · có thể xem khoảng ngày bất kỳ`
+            : "Tổng tiền tour mỗi KTV theo tháng · có thể xem khoảng ngày bất kỳ"
+        }
         action={
           <>
-            <div className="flex items-center gap-1 rounded-xl border border-champagne bg-white/80 px-1">
-              <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonths(m, -1))} aria-label="Tháng trước">
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-              <span className="px-2 text-sm font-semibold">{formatMonth(month)}</span>
-              <Button variant="ghost" size="icon" onClick={() => setMonth((m) => addMonths(m, 1))} disabled={month >= vnMonthStart()} aria-label="Tháng sau">
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
             <Button variant="secondary" onClick={doExport} loading={exporting} disabled={!summary}>
               <Download className="h-4 w-4" /> Xuất Excel
             </Button>
-            {isOwner ? (
+            {isOwner && month ? (
               isLocked ? (
                 <Button variant="dark" onClick={() => setConfirmLock("unlock")}>
                   <Unlock className="h-4 w-4" /> Mở sổ
@@ -115,9 +136,16 @@ export function PayrollPage() {
         }
       />
 
+      <PeriodPicker value={sel} onChange={setSel} startDay={startDay} currentPeriod={currentPeriod} className="mb-4 max-w-md" />
+
       {isLocked ? (
         <p className="mb-4 flex items-center gap-2 rounded-xl border border-gold/60 bg-champagne/30 px-4 py-2 text-sm text-gold-stronger">
-          <Lock className="h-4 w-4" /> Tháng đã chốt sổ lúc {formatDateTime(locked?.locked_at)} – không sửa / huỷ được tour của tháng này.
+          <Lock className="h-4 w-4" /> Kỳ đã chốt sổ lúc {formatDateTime(locked?.locked_at)} – không sửa / huỷ được tour của kỳ này.
+        </p>
+      ) : null}
+      {!month ? (
+        <p className="mb-4 rounded-xl border border-champagne bg-cream/60 px-4 py-2 text-sm text-mocha">
+          Đang xem {label}. Chốt sổ và báo sai tính theo kỳ lương – chuyển sang “{startDay > 1 ? "Theo kỳ lương" : "Theo tháng"}” để chốt.
         </p>
       ) : null}
 
@@ -187,18 +215,19 @@ export function PayrollPage() {
             </CardBody>
           </Card>
 
+          {month ? (
           <Card>
             <CardHeader title={`Yêu cầu báo sai (${openDisputes.length} đang chờ)`} />
             <CardBody>
               {disputes.length === 0 ? (
-                <EmptyState title="Không có yêu cầu báo sai trong tháng" />
+                <EmptyState title="Không có yêu cầu báo sai trong kỳ" />
               ) : (
                 <ul className="space-y-2">
                   {disputes.map((d) => (
                     <li key={d.id} className="rounded-2xl border border-champagne bg-white/80 p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="font-semibold text-espresso">
-                          {d.technician?.full_name} · {d.tour ? `${d.tour.code} (${d.tour.customer_name})` : "Cả tháng"}
+                          {d.technician?.full_name} · {d.tour ? `${d.tour.code} (${d.tour.customer_name})` : "Cả kỳ"}
                         </span>
                         <Badge tone={d.status === "open" ? "pending" : d.status === "resolved" ? "free" : "off"}>
                           {d.status === "open" ? "Đang chờ" : d.status === "resolved" ? "Đã xử lý" : "Không chấp nhận"}
@@ -218,6 +247,7 @@ export function PayrollPage() {
               )}
             </CardBody>
           </Card>
+          ) : null}
         </div>
       )}
 
@@ -255,29 +285,31 @@ export function PayrollPage() {
       <ConfirmDialog
         open={confirmLock === "lock"}
         onOpenChange={(v) => !v && setConfirmLock(null)}
-        title={`Chốt sổ ${formatMonth(month)}?`}
+        title={`Chốt sổ ${label}?`}
         description={
           openDisputes.length > 0
-            ? `Còn ${openDisputes.length} yêu cầu báo sai chưa xử lý. Sau khi chốt, tour của tháng không sửa/huỷ được nữa.`
-            : "Sau khi chốt, tour của tháng không sửa/huỷ được nữa (chỉ chủ spa mở lại sổ)."
+            ? `Còn ${openDisputes.length} yêu cầu báo sai chưa xử lý. Sau khi chốt, tour của kỳ không sửa/huỷ được nữa.`
+            : "Sau khi chốt, tour của kỳ không sửa/huỷ được nữa (chỉ chủ spa mở lại sổ)."
         }
         confirmLabel="Chốt sổ"
         onConfirm={async () => {
+          if (!month) return;
           const { error: err } = await getSupabaseBrowser().rpc("lock_month", { p_month: month });
           if (err) throw new Error(errorMessage(err));
-          toast.success(`Đã chốt sổ ${formatMonth(month)}`);
+          toast.success(`Đã chốt sổ ${label}`);
           load();
         }}
       />
       <ConfirmDialog
         open={confirmLock === "unlock"}
         onOpenChange={(v) => !v && setConfirmLock(null)}
-        title={`Mở lại sổ ${formatMonth(month)}?`}
+        title={`Mở lại sổ ${label}?`}
         description="Thao tác được ghi vào nhật ký."
         confirmLabel="Mở sổ"
         tone="danger"
         requireReason
         onConfirm={async (reason) => {
+          if (!month) return;
           const { error: err } = await getSupabaseBrowser().rpc("unlock_month", { p_month: month, p_reason: reason });
           if (err) throw new Error(errorMessage(err));
           toast.success("Đã mở lại sổ");

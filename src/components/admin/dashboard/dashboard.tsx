@@ -116,6 +116,7 @@ export function Dashboard() {
                 <BalanceChart
                   technicians={data.technicians}
                   thresholdPercent={data.settings.imbalanceThresholdPercent}
+                  periodLabel={data.period.startDay > 1 ? "Kỳ này" : "Tháng này"}
                 />
               </div>
             </div>

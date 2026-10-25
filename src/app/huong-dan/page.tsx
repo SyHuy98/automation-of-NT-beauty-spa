@@ -80,10 +80,10 @@ export default function GuidePage() {
             Hết giờ không trả lời thì tour tự chuyển đi.
           </li>
           <li>
-            Làm xong bấm <strong>Hoàn thành</strong> – tiền tour tự cộng vào Hôm nay / Tháng này.
+            Làm xong bấm <strong>Hoàn thành</strong> – tiền tour tự cộng vào Hôm nay / Kỳ này.
           </li>
           <li>
-            Thấy tiền sai? Vào <strong>Thu nhập</strong> → <strong>Báo sai</strong> trên tour đó (hoặc cả tháng).
+            Thấy tiền sai? Vào <strong>Thu nhập</strong> → <strong>Báo sai</strong> trên tour đó (hoặc cả kỳ). Có thể chọn <strong>theo kỳ lương</strong> (mặc định 21 → 20) hoặc <strong>chọn ngày</strong> từ ngày… đến ngày….
           </li>
           <li>Về thì bấm <strong>Ra ca</strong>.</li>
         </ol>
@@ -112,8 +112,9 @@ export default function GuidePage() {
           <li>Ô “Cần xử lý” + âm báo: KTV từ chối / không phản hồi tour Gợi ý hoặc Chỉ định → bấm “Chọn lại KTV”.</li>
           <li>Sửa / huỷ / đổi KTV luôn phải nhập lý do và được ghi vào Nhật ký thao tác.</li>
           <li>
-            Cuối tháng: <strong>Chốt lương</strong> → xử lý báo sai → <strong>Xuất Excel</strong> → <strong>Chốt sổ</strong> (chỉ chủ spa). Tháng đã
-            chốt không sửa được tour.
+            Cuối kỳ lương (mặc định ngày 20): <strong>Chốt lương</strong> → xử lý báo sai → <strong>Xuất Excel</strong> →{" "}
+            <strong>Chốt sổ</strong> (chỉ chủ spa). Kỳ đã chốt không sửa được tour. Muốn xem / xuất khoảng ngày bất kỳ thì chọn{" "}
+            <strong>Chọn ngày</strong>.
           </li>
         </ul>
       </section>

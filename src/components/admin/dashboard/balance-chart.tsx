@@ -8,14 +8,22 @@ import { formatMoney, formatMoneyShort } from "@/lib/format";
 import type { DashboardTechnician, Gender } from "@/types/app";
 
 /**
- * Biểu đồ cân bằng thu nhập giữa các KTV (hôm nay / tháng này).
+ * Biểu đồ cân bằng thu nhập giữa các KTV (hôm nay / kỳ lương này).
  * KTV nam và nữ là 2 nhóm riêng (khách nam → KTV nam, khách nữ → KTV nữ) nên
  * mỗi nhóm có trung bình riêng.
  * Chỉ tính TOUR THƯỜNG (tour khách chỉ định là công riêng, không tính vào cân bằng).
  * Đường ngang = trung bình nhóm; cột đỏ gạch = lệch trên TB quá ngưỡng,
  * cột xám = thấp hơn TB quá ngưỡng.
  */
-export function BalanceChart({ technicians, thresholdPercent }: { technicians: DashboardTechnician[]; thresholdPercent: number }) {
+export function BalanceChart({
+  technicians,
+  thresholdPercent,
+  periodLabel = "Kỳ này",
+}: {
+  technicians: DashboardTechnician[];
+  thresholdPercent: number;
+  periodLabel?: string;
+}) {
   const [range, setRange] = useState<"today" | "month">("month");
   const hasMale = technicians.some((t) => t.gender === "male");
   const hasFemale = technicians.some((t) => t.gender !== "male");
@@ -63,7 +71,7 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
               onChange={setRange}
               options={[
                 { value: "today", label: "Hôm nay" },
-                { value: "month", label: "Tháng này" },
+                { value: "month", label: periodLabel },
               ]}
             />
           </div>
