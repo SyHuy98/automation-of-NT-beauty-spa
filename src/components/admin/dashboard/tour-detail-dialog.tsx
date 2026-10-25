@@ -485,7 +485,7 @@ function EditTourBody({
         <Field label="Ghi chú">{(p) => <Textarea {...p} value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16" />}</Field>
         <div>
           <p className="mb-2 text-sm font-medium text-mocha">Dịch vụ (dịch vụ cũ giữ giá đã chụp, dịch vụ thêm mới lấy giá hiện tại)</p>
-          <ServicePicker services={pickerServices} selected={serviceIds} onChange={setServiceIds} />
+          <ServicePicker services={services ? pickerServices : null} selected={serviceIds} onChange={setServiceIds} />
         </div>
         {tour.members.length > 1 ? (
           <div className="grid gap-3 sm:grid-cols-2">
