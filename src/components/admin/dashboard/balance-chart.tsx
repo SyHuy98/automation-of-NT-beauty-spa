@@ -11,6 +11,7 @@ import type { DashboardTechnician, Gender } from "@/types/app";
  * Biểu đồ cân bằng thu nhập giữa các KTV (hôm nay / tháng này).
  * KTV nam và nữ là 2 nhóm riêng (khách nam → KTV nam, khách nữ → KTV nữ) nên
  * mỗi nhóm có trung bình riêng.
+ * Chỉ tính TOUR THƯỜNG (tour khách chỉ định là công riêng, không tính vào cân bằng).
  * Đường ngang = trung bình nhóm; cột đỏ gạch = lệch trên TB quá ngưỡng,
  * cột xám = thấp hơn TB quá ngưỡng.
  */
@@ -27,8 +28,8 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
     const rows = members.map((t) => ({
       name: shortName(t.fullName),
       fullName: t.fullName,
-      value: range === "today" ? t.todayAmount : t.monthAmount,
-      requested: range === "month" ? t.monthRequestedAmount : 0,
+      value: range === "today" ? t.todayAmount - t.todayRequestedAmount : t.monthAmount - t.monthRequestedAmount,
+      requested: range === "today" ? t.todayRequestedAmount : t.monthRequestedAmount,
     }));
     const avg = rows.length ? rows.reduce((s, r) => s + r.value, 0) / rows.length : 0;
     return { rows: rows.sort((a, b) => b.value - a.value), avg };
@@ -42,7 +43,7 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
     <Card className="h-full">
       <CardHeader
         title="Cân bằng thu nhập"
-        subtitle={`Đánh dấu KTV lệch quá ±${thresholdPercent}% so với trung bình`}
+        subtitle={`Tiền tour thường (không tính khách chỉ định) · đánh dấu KTV lệch quá ±${thresholdPercent}%`}
         action={
           <div className="flex flex-wrap justify-end gap-2">
             {hasMale && hasFemale ? (
@@ -90,7 +91,13 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
                   />
                   <Tooltip
                     cursor={{ fill: "rgba(232,213,168,0.25)" }}
-                    formatter={(v) => [formatMoney(Number(v)), "Tiền tour"]}
+                    formatter={(v, _n, item) => {
+                      const req = (item?.payload as { requested?: number })?.requested ?? 0;
+                      return [
+                        `${formatMoney(Number(v))}${req > 0 ? ` (+${formatMoney(req)} chỉ định)` : ""}`,
+                        "Tour thường",
+                      ];
+                    }}
                     labelFormatter={(_, p) => (p?.[0]?.payload as { fullName?: string })?.fullName ?? ""}
                     contentStyle={{ borderRadius: 12, borderColor: "#E8D5A8", background: "#FBF7F0" }}
                   />
@@ -113,7 +120,6 @@ export function BalanceChart({ technicians, thresholdPercent }: { technicians: D
                   return (
                     <li key={r.fullName} className={pct > 0 ? "text-busy-ink" : "text-off-ink"}>
                       {r.fullName}: {pct > 0 ? "cao hơn" : "thấp hơn"} TB {Math.abs(pct)}%
-                      {r.requested > 0 ? ` (tour chỉ định ${formatMoney(r.requested)})` : ""}
                     </li>
                   );
                 })}

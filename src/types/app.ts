@@ -43,6 +43,7 @@ export interface DashboardTechnician {
   todayAmount: number;
   monthAmount: number;
   monthRequestedAmount: number;
+  todayRequestedAmount: number;
   todayTours: number;
   lastTourEndedAt: string | null;
 }

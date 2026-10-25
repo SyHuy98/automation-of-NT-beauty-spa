@@ -109,12 +109,11 @@ export const settingsSchema = z.object({
   weights: z.object({
     today: z.coerce.number().min(0).max(200),
     month: z.coerce.number().min(0).max(200),
-    requested: z.coerce.number().min(0).max(200),
     idle: z.coerce.number().min(0).max(200),
     shiftEnd: z.coerce.number().min(0).max(500),
     declines: z.coerce.number().min(0).max(200),
   }),
-  requested_threshold_percent: z.coerce.number().int().min(0).max(200),
+  overdue_alert_minutes: z.coerce.number().int().min(1, "Tối thiểu 1 phút").max(240, "Tối đa 240 phút"),
   imbalance_threshold_percent: z.coerce.number().int().min(0).max(200),
   random_pool_size: z.coerce.number().int().min(1).max(10),
   decline_reasons: z.array(z.string().trim().min(1).max(100)).min(1, "Cần ít nhất 1 lý do").max(15),

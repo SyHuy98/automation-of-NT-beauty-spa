@@ -140,6 +140,7 @@ export type Database = {
           decline_reasons: string[]
           id: boolean
           imbalance_threshold_percent: number
+          overdue_alert_minutes: number
           offer_timeout_seconds: number
           random_pool_size: number
           requested_threshold_percent: number
@@ -152,6 +153,7 @@ export type Database = {
           decline_reasons?: string[]
           id?: boolean
           imbalance_threshold_percent?: number
+          overdue_alert_minutes?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -164,6 +166,7 @@ export type Database = {
           decline_reasons?: string[]
           id?: boolean
           imbalance_threshold_percent?: number
+          overdue_alert_minutes?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -769,6 +772,7 @@ export type Database = {
           id: string
           is_requested: boolean
           note: string | null
+          overdue_notified_at: string | null
           requested_share_percent: number
           requested_technician_id: string | null
           started_at: string | null
@@ -791,6 +795,7 @@ export type Database = {
           id?: string
           is_requested?: boolean
           note?: string | null
+          overdue_notified_at?: string | null
           requested_share_percent?: number
           requested_technician_id?: string | null
           started_at?: string | null
@@ -813,6 +818,7 @@ export type Database = {
           id?: string
           is_requested?: boolean
           note?: string | null
+          overdue_notified_at?: string | null
           requested_share_percent?: number
           requested_technician_id?: string | null
           started_at?: string | null
