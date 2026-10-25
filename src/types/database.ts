@@ -764,6 +764,7 @@ export type Database = {
       }
       tours: {
         Row: {
+          allow_any_gender: boolean
           assign_mode: Database["public"]["Enums"]["assign_mode"]
           cancelled_at: string | null
           cancelled_reason: string | null
@@ -787,6 +788,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_any_gender?: boolean
           assign_mode?: Database["public"]["Enums"]["assign_mode"]
           cancelled_at?: string | null
           cancelled_reason?: string | null
@@ -810,6 +812,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_any_gender?: boolean
           assign_mode?: Database["public"]["Enums"]["assign_mode"]
           cancelled_at?: string | null
           cancelled_reason?: string | null

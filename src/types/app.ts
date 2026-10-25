@@ -54,6 +54,8 @@ export interface DashboardTour {
   customerName: string;
   customerPhone: string | null;
   customerGender: Gender;
+  /** Khách nam đồng ý để KTV nữ làm */
+  allowAnyGender: boolean;
   note: string | null;
   status: TourStatus;
   assignMode: AssignMode;

@@ -63,6 +63,7 @@ export const tourCreateSchema = z
     customer_name: z.string().trim().min(1, "Vui lòng nhập tên khách").max(120),
     customer_phone: phone,
     customer_gender: z.enum(["male", "female"]),
+    allow_any_gender: z.boolean().default(false),
     note: z.string().trim().max(1000, "Ghi chú tối đa 1000 ký tự"),
     service_ids: z.array(z.string().uuid()).min(1, "Chọn ít nhất 1 dịch vụ").max(10, "Tối đa 10 dịch vụ"),
     assign_mode: z.enum(["suggest", "auto", "random", "requested"]),

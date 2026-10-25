@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, Input, Segmented, Select, Textarea } from "@/components/ui/form";
+import { Checkbox, Field, Input, Segmented, Select, Textarea } from "@/components/ui/form";
 import { Badge, Money } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import type { RankedCandidate } from "@/lib/assignment";
@@ -149,7 +149,12 @@ export function TourDetailDialog({
       >
         <div className="space-y-5">
           <section className="grid gap-3 sm:grid-cols-2">
-            <Info label="Khách" value={`${tour.customerName} · khách ${GENDER_LABEL[tour.customerGender].toLowerCase()}`} />
+            <Info
+              label="Khách"
+              value={`${tour.customerName} · khách ${GENDER_LABEL[tour.customerGender].toLowerCase()}${
+                tour.allowAnyGender ? " (đồng ý KTV nữ)" : ""
+              }`}
+            />
             <Info label="Điện thoại" value={tour.customerPhone ?? "—"} />
             {tour.note ? <Info label="Ghi chú" value={tour.note} className="sm:col-span-2" /> : null}
             {tour.cancelledReason ? <Info label="Lý do huỷ" value={tour.cancelledReason} className="sm:col-span-2" /> : null}
@@ -370,6 +375,7 @@ function EditTourBody({
   const [name, setName] = useState(tour.customerName);
   const [phone, setPhone] = useState(tour.customerPhone ?? "");
   const [gender, setGender] = useState<Gender>(tour.customerGender);
+  const [allowFemale, setAllowFemale] = useState(tour.allowAnyGender);
   const [note, setNote] = useState(tour.note ?? "");
   const [serviceIds, setServiceIds] = useState<string[]>(() => tour.items.map((i) => i.serviceId).filter(Boolean) as string[]);
   const [shares, setShares] = useState<Record<string, number>>(() =>
@@ -391,6 +397,8 @@ function EditTourBody({
     }
     const p: Record<string, unknown> = { customer_name: name, customer_phone: phone, note };
     if (gender !== tour.customerGender) p.customer_gender = gender;
+    const allowAny = gender === "male" && allowFemale;
+    if (allowAny !== tour.allowAnyGender) p.allow_any_gender = allowAny;
     const original = (tour.items.map((i) => i.serviceId) as string[]).join(",");
     if (serviceIds.join(",") !== original) p.service_ids = serviceIds;
     if (tour.members.length > 1) {
@@ -468,6 +476,11 @@ function EditTourBody({
               { value: "male", label: "Khách nam" },
             ]}
           />
+          {gender === "male" ? (
+            <div className="mt-2">
+              <Checkbox checked={allowFemale} onChange={setAllowFemale} label="Khách đồng ý để KTV nữ làm" />
+            </div>
+          ) : null}
         </div>
         <Field label="Ghi chú">{(p) => <Textarea {...p} value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16" />}</Field>
         <div>
