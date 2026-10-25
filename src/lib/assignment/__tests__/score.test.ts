@@ -330,6 +330,12 @@ describe("rankTechnicians – giới tính", () => {
     expect(r.candidates).toHaveLength(4);
   });
 
+  it("khách nam đồng ý KTV nữ: còn KTV nam rảnh vẫn xét cả KTV nữ", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "male", genderFree: true }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nam1", "nam2", "nu1", "nu2"]);
+    expect(r.genderFallback).toBe(false);
+  });
+
   it("không có giới tính khách → không lọc (giữ hành vi cũ)", () => {
     const r = rankTechnicians(snapshot(team()));
     expect(r.candidates).toHaveLength(4);

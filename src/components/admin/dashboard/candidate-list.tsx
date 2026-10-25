@@ -67,7 +67,8 @@ export function CandidateList({
 
       {result.genderFree ? (
         <p className="rounded-xl border border-champagne bg-cream/60 px-3 py-2 text-sm text-mocha">
-          Dịch vụ chuyên môn không phân biệt giới tính – KTV nam hoặc nữ có kỹ năng đều được gợi ý.
+          Tour này không áp dụng quy tắc giới tính (dịch vụ chuyên môn hoặc khách nam đồng ý KTV nữ) – KTV nam và nữ đều
+          được gợi ý.
         </p>
       ) : null}
       {result.genderFallback ? (

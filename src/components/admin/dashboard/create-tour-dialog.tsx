@@ -46,6 +46,9 @@ function CreateTourBody({
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState<Gender>("female");
+  // Khách nam đồng ý để KTV nữ làm (đông khách / khách muốn KTV nữ)
+  const [allowFemale, setAllowFemale] = useState(false);
+  const allowAnyGender = gender === "male" && allowFemale;
   const [note, setNote] = useState("");
   const [serviceIds, setServiceIds] = useState<string[]>([]);
   const [mode, setMode] = useState<AssignMode>("suggest");
@@ -64,6 +67,7 @@ function CreateTourBody({
     null,
     needRanking || (open && mode === "requested" && pair && serviceIds.length > 0),
     gender,
+    allowAnyGender,
   );
 
   const requestedTech = technicians.find((t) => t.id === requestedId);
@@ -82,6 +86,7 @@ function CreateTourBody({
       customer_name: name,
       customer_phone: phone,
       customer_gender: gender,
+      allow_any_gender: allowAnyGender,
       note,
       service_ids: serviceIds,
       assign_mode: modeOverride ?? mode,
@@ -223,8 +228,23 @@ function CreateTourBody({
               ? "Dịch vụ chuyên môn không phân biệt giới tính – KTV nam hoặc nữ có kỹ năng đều được."
               : gender === "female"
                 ? "Chỉ phân cho KTV nữ."
-                : "Ưu tiên KTV nam; không còn KTV nam rảnh thì mới gợi ý KTV nữ."}
+                : allowAnyGender
+                  ? "Khách đồng ý KTV nữ – KTV nam và nữ đều được gợi ý / gửi, chia công bằng như nhau."
+                  : "Ưu tiên KTV nam; không còn KTV nam rảnh thì mới gợi ý KTV nữ."}
           </p>
+          {gender === "male" && !genderFree ? (
+            <div className="mt-2">
+              <Checkbox
+                checked={allowFemale}
+                onChange={(v) => {
+                  setAllowFemale(v);
+                  setSelected([]);
+                }}
+                label="Khách đồng ý để KTV nữ làm"
+                description="Đông khách hoặc khách muốn KTV nữ. Khách chỉ định đích danh KTV nữ thì dùng chế độ “Khách chỉ định”."
+              />
+            </div>
+          ) : null}
         </div>
 
         <div>

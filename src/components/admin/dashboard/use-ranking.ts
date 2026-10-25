@@ -10,7 +10,14 @@ import { getSupabaseBrowser } from "@/lib/supabase/client";
  * `customerGender`: giới tính khách đang nhập trên form (tour chưa tạo); bỏ trống
  * thì dùng giới tính đã lưu của tour `tourId`.
  */
-export function useRanking(serviceIds: string[], tourId?: string | null, enabled = true, customerGender?: Gender | null) {
+export function useRanking(
+  serviceIds: string[],
+  tourId?: string | null,
+  enabled = true,
+  customerGender?: Gender | null,
+  /** Khách nam đồng ý KTV nữ (form chưa lưu) → bỏ quy tắc giới tính */
+  allowAnyGender = false,
+) {
   const [snapshot, setSnapshot] = useState<AssignmentSnapshot | null>(null);
   const [result, setResult] = useState<RankResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -33,13 +40,17 @@ export function useRanking(serviceIds: string[], tourId?: string | null, enabled
       return null;
     }
     const raw = data as unknown as AssignmentSnapshot;
-    const snap = customerGender ? { ...raw, customerGender } : raw;
+    const snap = {
+      ...raw,
+      ...(customerGender ? { customerGender } : {}),
+      ...(allowAnyGender ? { genderFree: true } : {}),
+    };
     const ranked = rankTechnicians(snap);
     setSnapshot(snap);
     setResult(ranked);
     setError(null);
     return { snapshot: snap, result: ranked };
-  }, [key, tourId, enabled, customerGender]);
+  }, [key, tourId, enabled, customerGender, allowAnyGender]);
 
   useEffect(() => {
     const id = setTimeout(() => void load(), 150);
