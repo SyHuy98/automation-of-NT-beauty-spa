@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff, Pencil, Plus, Sparkle } from "lucide-react";
+import { Eye, EyeOff, Pencil, Plus, Sparkle, VenusAndMars } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, EmptyState, ErrorState, PageHeader } from "@/components/ui/card";
@@ -78,6 +78,11 @@ export function ServicesPage() {
                             <Sparkle className="h-3 w-3" /> Cần kỹ năng
                           </Badge>
                         ) : null}
+                        {s.any_gender ? (
+                          <Badge tone="neutral" className="ml-2">
+                            <VenusAndMars className="h-3 w-3" /> Nam & nữ
+                          </Badge>
+                        ) : null}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <Money value={s.tour_fee} className="font-semibold" />
@@ -144,6 +149,7 @@ function ServiceDialogBody({
   const [fee, setFee] = useState(service ? String(service.tour_fee) : "");
   const [duration, setDuration] = useState(service ? String(service.duration_minutes) : "60");
   const [requiresSkill, setRequiresSkill] = useState(service?.requires_skill ?? false);
+  const [anyGender, setAnyGender] = useState(service?.any_gender ?? false);
   const [order, setOrder] = useState(String(service?.sort_order ?? nextOrder));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -154,6 +160,7 @@ function ServiceDialogBody({
       tour_fee: fee.replace(/[.,\s₫]/g, ""),
       duration_minutes: duration,
       requires_skill: requiresSkill,
+      any_gender: anyGender,
       sort_order: order || 0,
     });
     if (!parsed.success) {
@@ -219,6 +226,12 @@ function ServiceDialogBody({
           onChange={setRequiresSkill}
           label="Cần kỹ năng riêng"
           description="Chỉ KTV được gán kỹ năng này mới được gợi ý (vd: HIFU, tiêm)"
+        />
+        <Checkbox
+          checked={anyGender}
+          onChange={setAnyGender}
+          label="Không phân biệt giới tính khách"
+          description="Dịch vụ chuyên môn (tiêm meso, botox, HIFU…): KTV nam có kỹ năng vẫn làm cho khách nữ và ngược lại. Áp dụng khi tour chỉ gồm các dịch vụ loại này."
         />
         {errors._ ? <p className="text-sm text-busy-ink">{errors._}</p> : null}
       </div>

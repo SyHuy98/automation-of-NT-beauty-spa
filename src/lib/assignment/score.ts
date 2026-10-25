@@ -83,6 +83,11 @@ export interface AssignmentSnapshot {
    * nào phù hợp thì chuyển sang KTV nữ. Không có → không lọc theo giới tính.
    */
   customerGender?: Gender | null;
+  /**
+   * Mọi dịch vụ của tour đều "không phân biệt giới tính" (tiêm meso, botox, HIFU…):
+   * bỏ quy tắc giới tính – KTV nam/nữ có kỹ năng đều được xét.
+   */
+  genderFree?: boolean;
   settings: {
     weights: Partial<AssignmentWeights>;
     /** Không còn dùng (tour chỉ định đã không tính vào cân bằng) – giữ để tương thích */
@@ -131,6 +136,8 @@ export interface RankResult {
   groupMonthAverages: Record<Gender, number>;
   /** Khách nam nhưng không còn KTV nam phù hợp → đang xếp KTV nữ */
   genderFallback: boolean;
+  /** Tour chỉ gồm dịch vụ không phân biệt giới tính → không lọc theo giới tính */
+  genderFree: boolean;
 }
 
 const DEFAULT_SHIFT_HOURS: Record<ShiftKey, { start: string; end: string }> = {
@@ -224,15 +231,17 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
     else eligible.push(t);
   }
 
-  // Lọc theo giới tính khách
+  // Lọc theo giới tính khách (bỏ qua với tour chỉ gồm dịch vụ không phân biệt giới tính)
   let genderFallback = false;
   const customerGender = snapshot.customerGender ?? null;
-  if (customerGender === "female") {
+  const genderFree = !!snapshot.genderFree;
+  const genderRule = genderFree ? null : customerGender;
+  if (genderRule === "female") {
     for (const t of eligible.filter((t) => genderOf(t) === "male")) {
       excluded.push({ technicianId: t.id, fullName: t.fullName, reason: "Khách nữ – chỉ phân KTV nữ" });
     }
     eligible = eligible.filter((t) => genderOf(t) === "female");
-  } else if (customerGender === "male") {
+  } else if (genderRule === "male") {
     const males = eligible.filter((t) => genderOf(t) === "male");
     if (males.length > 0) {
       for (const t of eligible.filter((t) => genderOf(t) === "female")) {
@@ -246,7 +255,7 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
 
   // TB hiển thị = nhóm của các ứng viên (khách nam → nam, trừ khi chuyển KTV nữ)
   const shownGender: Gender | null =
-    customerGender === "male" && !genderFallback ? "male" : customerGender ? "female" : null;
+    genderRule === "male" && !genderFallback ? "male" : genderRule ? "female" : null;
   const groupMonthAverage = shownGender !== null ? groupMonthAverages[shownGender] : average(activeTechs);
 
   if (eligible.length === 0) {
@@ -254,12 +263,13 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
       candidates: [],
       excluded,
       message:
-        customerGender === "female"
+        genderRule === "female"
           ? "Hiện không có KTV nữ nào rảnh và phù hợp cho tour này"
           : "Hiện không có KTV nào rảnh và phù hợp cho tour này",
       groupMonthAverage,
       groupMonthAverages,
       genderFallback: false,
+      genderFree,
     };
   }
 
@@ -356,7 +366,7 @@ export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {
   });
 
   candidates.sort((a, b) => b.score - a.score || b.idleMinutes - a.idleMinutes || a.fullName.localeCompare(b.fullName));
-  return { candidates, excluded, message: null, groupMonthAverage, groupMonthAverages, genderFallback };
+  return { candidates, excluded, message: null, groupMonthAverage, groupMonthAverages, genderFallback, genderFree };
 }
 
 /** Chế độ Tự động: người điểm cao nhất */

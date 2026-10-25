@@ -65,6 +65,11 @@ export function CandidateList({
         </button>
       </div>
 
+      {result.genderFree ? (
+        <p className="rounded-xl border border-champagne bg-cream/60 px-3 py-2 text-sm text-mocha">
+          Dịch vụ chuyên môn không phân biệt giới tính – KTV nam hoặc nữ có kỹ năng đều được gợi ý.
+        </p>
+      ) : null}
       {result.genderFallback ? (
         <p className="flex items-start gap-2 rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />

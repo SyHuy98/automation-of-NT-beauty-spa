@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Search, Sparkle, X } from "lucide-react";
+import { Check, ChevronDown, Search, Sparkle, VenusAndMars, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
 import { Money } from "@/components/ui/misc";
@@ -102,6 +102,7 @@ export function ServicePicker({
             >
               <span className="font-medium">{s.name}</span>
               {s.requires_skill ? <Sparkle className="h-3 w-3 text-gold-strong" aria-label="Cần kỹ năng riêng" /> : null}
+              {s.any_gender ? <VenusAndMars className="h-3 w-3 text-mocha" aria-label="Không phân biệt giới tính khách" /> : null}
               <span className="text-mocha">
                 · <Money value={s.tour_fee} />
               </span>
@@ -205,6 +206,9 @@ export function ServicePicker({
                   <span className="min-w-0 flex-1 truncate text-[15px] text-espresso">
                     {s.name}
                     {s.requires_skill ? <Sparkle className="ml-1 inline h-3.5 w-3.5 text-gold-strong" aria-label="Cần kỹ năng riêng" /> : null}
+                    {s.any_gender ? (
+                      <VenusAndMars className="ml-1 inline h-3.5 w-3.5 text-mocha" aria-label="Không phân biệt giới tính khách" />
+                    ) : null}
                   </span>
                   <span className="shrink-0 text-sm text-mocha">
                     <Money value={s.tour_fee} /> · {s.duration_minutes}′
@@ -226,8 +230,8 @@ export function ServicePicker({
       </div>
       {error ? <p className="mt-1 text-sm text-busy-ink">{error}</p> : null}
       <p className="mt-1 text-xs text-mocha">
-        <Sparkle className="inline h-3 w-3 text-gold-strong" /> = dịch vụ cần kỹ năng riêng (chỉ KTV được gán mới được gợi ý). Phím ↑ ↓ để
-        chọn, Enter để thêm.
+        <Sparkle className="inline h-3 w-3 text-gold-strong" /> = cần kỹ năng riêng ·{" "}
+        <VenusAndMars className="inline h-3 w-3" /> = không phân biệt giới tính khách. Phím ↑ ↓ để chọn, Enter để thêm.
       </p>
     </div>
   );

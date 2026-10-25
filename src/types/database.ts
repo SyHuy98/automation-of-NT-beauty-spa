@@ -372,6 +372,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          any_gender: boolean
           requires_skill: boolean
           sort_order: number
           tour_fee: number
@@ -383,6 +384,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          any_gender?: boolean
           requires_skill?: boolean
           sort_order?: number
           tour_fee: number
@@ -394,6 +396,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          any_gender?: boolean
           requires_skill?: boolean
           sort_order?: number
           tour_fee?: number
