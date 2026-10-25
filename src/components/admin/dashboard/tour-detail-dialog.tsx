@@ -5,15 +5,23 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/form";
+import { Field, Input, Segmented, Select, Textarea } from "@/components/ui/form";
 import { Badge, Money } from "@/components/ui/misc";
 import { useToast } from "@/components/ui/toast";
 import type { RankedCandidate } from "@/lib/assignment";
-import { ASSIGN_MODE_LABEL, errorMessage, formatDateTime, formatDuration, formatTime, TOUR_STATUS_LABEL } from "@/lib/format";
+import {
+  ASSIGN_MODE_LABEL,
+  errorMessage,
+  formatDateTime,
+  formatDuration,
+  formatTime,
+  GENDER_LABEL,
+  TOUR_STATUS_LABEL,
+} from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { reasonSchema } from "@/lib/validation/schemas";
-import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type DashboardTour } from "@/types/app";
+import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type DashboardTour, type Gender } from "@/types/app";
 import type { Json } from "@/types/database";
 import { useServices } from "../use-dashboard";
 import { CandidateList } from "./candidate-list";
@@ -141,7 +149,7 @@ export function TourDetailDialog({
       >
         <div className="space-y-5">
           <section className="grid gap-3 sm:grid-cols-2">
-            <Info label="Khách" value={tour.customerName} />
+            <Info label="Khách" value={`${tour.customerName} · khách ${GENDER_LABEL[tour.customerGender].toLowerCase()}`} />
             <Info label="Điện thoại" value={tour.customerPhone ?? "—"} />
             {tour.note ? <Info label="Ghi chú" value={tour.note} className="sm:col-span-2" /> : null}
             {tour.cancelledReason ? <Info label="Lý do huỷ" value={tour.cancelledReason} className="sm:col-span-2" /> : null}
@@ -361,6 +369,7 @@ function EditTourBody({
   const { services } = useServices();
   const [name, setName] = useState(tour.customerName);
   const [phone, setPhone] = useState(tour.customerPhone ?? "");
+  const [gender, setGender] = useState<Gender>(tour.customerGender);
   const [note, setNote] = useState(tour.note ?? "");
   const [serviceIds, setServiceIds] = useState<string[]>(() => tour.items.map((i) => i.serviceId).filter(Boolean) as string[]);
   const [shares, setShares] = useState<Record<string, number>>(() =>
@@ -381,6 +390,7 @@ function EditTourBody({
       return;
     }
     const p: Record<string, unknown> = { customer_name: name, customer_phone: phone, note };
+    if (gender !== tour.customerGender) p.customer_gender = gender;
     const original = (tour.items.map((i) => i.serviceId) as string[]).join(",");
     if (serviceIds.join(",") !== original) p.service_ids = serviceIds;
     if (tour.members.length > 1) {
@@ -446,6 +456,18 @@ function EditTourBody({
             {(p) => <Input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} />}
           </Field>
         </div>
+        <div>
+          <p className="mb-2 text-sm font-medium text-mocha">Khách</p>
+          <Segmented<Gender>
+            ariaLabel="Giới tính khách"
+            value={gender}
+            onChange={setGender}
+            options={[
+              { value: "female", label: "Khách nữ" },
+              { value: "male", label: "Khách nam" },
+            ]}
+          />
+        </div>
         <Field label="Ghi chú">{(p) => <Textarea {...p} value={note} onChange={(e) => setNote(e.target.value)} className="min-h-16" />}</Field>
         <div>
           <p className="mb-2 text-sm font-medium text-mocha">Dịch vụ (dịch vụ cũ giữ giá đã chụp, dịch vụ thêm mới lấy giá hiện tại)</p>
@@ -505,6 +527,8 @@ function ReassignBody({
   const active = member.status === "accepted" || member.status === "working";
 
   const options = technicians.filter((t) => !tour.members.some((m) => m.technicianId === t.id));
+  // khách nữ chỉ KTV nữ (trừ tour khách chỉ định)
+  const womenOnly = tour.customerGender === "female" && !tour.isRequested;
 
   const save = async () => {
     if (!newId) {
@@ -560,8 +584,12 @@ function ReassignBody({
             <Select {...p} value={newId} onChange={(e) => setNewId(e.target.value)}>
               <option value="">— Chọn KTV —</option>
               {options.map((t) => (
-                <option key={t.id} value={t.id} disabled={active && techStatus(t) !== "free"}>
-                  {t.fullName} ({TECH_STATUS_LABEL[techStatus(t)]})
+                <option
+                  key={t.id}
+                  value={t.id}
+                  disabled={(active && techStatus(t) !== "free") || (womenOnly && t.gender === "male")}
+                >
+                  {t.fullName} · {GENDER_LABEL[t.gender]} ({TECH_STATUS_LABEL[techStatus(t)]})
                 </option>
               ))}
             </Select>

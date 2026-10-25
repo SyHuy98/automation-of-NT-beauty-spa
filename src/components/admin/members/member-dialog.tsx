@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Checkbox, Field, Input } from "@/components/ui/form";
+import { Checkbox, Field, Input, Segmented } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import { adminUsers } from "@/lib/admin-users";
 import { errorMessage } from "@/lib/format";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { fieldErrors, memberCreateSchema, memberUpdateSchema } from "@/lib/validation/schemas";
 import { AvatarUploader } from "../../shared/avatar-uploader";
-import type { ProfileRow, ServiceRow, ShiftType } from "@/types/app";
+import type { Gender, ProfileRow, ServiceRow, ShiftType } from "@/types/app";
 
 export function MemberDialog(props: Parameters<typeof MemberDialogBody>[0]) {
   if (!props.open) return null;
@@ -40,6 +40,8 @@ function MemberDialogBody({
   const [username, setUsername] = useState(member?.username ?? "");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState(member?.phone ?? "");
+  // KTV mới phải chọn giới tính (dùng để phân tour theo giới tính khách)
+  const [gender, setGender] = useState<Gender | null>(member?.gender ?? null);
   const [skillIds, setSkillIds] = useState<string[]>(currentSkills);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -47,6 +49,10 @@ function MemberDialogBody({
   const skillServices = services.filter((s) => s.requires_skill);
 
   const save = async () => {
+    if (role === "technician" && !gender) {
+      setErrors({ gender: "Chọn giới tính KTV" });
+      return;
+    }
     setBusy(true);
     try {
       if (isNew) {
@@ -56,6 +62,7 @@ function MemberDialogBody({
           password,
           phone,
           role,
+          gender: role === "technician" ? (gender ?? undefined) : undefined,
           skill_ids: role === "technician" ? skillIds : [],
         });
         if (!parsed.success) {
@@ -77,6 +84,7 @@ function MemberDialogBody({
           // ca làm xác định theo từng ngày (Lịch ca / lúc vào ca), không lưu ở hồ sơ
           p_shift: null as unknown as ShiftType,
           p_skill_ids: role === "technician" ? parsed.data.skill_ids : (null as unknown as string[]),
+          ...(role === "technician" && gender ? { p_gender: gender } : {}),
         });
         if (error) throw new Error(errorMessage(error));
         toast.success("Đã lưu thay đổi");
@@ -143,6 +151,29 @@ function MemberDialogBody({
             </Field>
           ) : null}
         </div>
+
+        {role === "technician" ? (
+          <div>
+            <p className="mb-1 text-sm font-medium text-mocha">
+              Giới tính <span className="text-busy-ink">*</span>
+            </p>
+            <Segmented<Gender>
+              ariaLabel="Giới tính KTV"
+              value={gender}
+              onChange={(g) => {
+                setGender(g);
+                setErrors((e) => ({ ...e, gender: "" }));
+              }}
+              options={[
+                { value: "female", label: "Nữ" },
+                { value: "male", label: "Nam" },
+              ]}
+            />
+            <p className={errors.gender ? "mt-1 text-sm text-busy-ink" : "mt-1 text-sm text-mocha"}>
+              {errors.gender || "Khách nữ chỉ phân KTV nữ; khách nam ưu tiên KTV nam."}
+            </p>
+          </div>
+        ) : null}
 
         {role === "technician" ? (
           <div>

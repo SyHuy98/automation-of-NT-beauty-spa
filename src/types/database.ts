@@ -140,6 +140,7 @@ export type Database = {
           decline_reasons: string[]
           id: boolean
           imbalance_threshold_percent: number
+          overdue_alert_minutes: number
           offer_timeout_seconds: number
           random_pool_size: number
           requested_threshold_percent: number
@@ -152,6 +153,7 @@ export type Database = {
           decline_reasons?: string[]
           id?: boolean
           imbalance_threshold_percent?: number
+          overdue_alert_minutes?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -164,6 +166,7 @@ export type Database = {
           decline_reasons?: string[]
           id?: boolean
           imbalance_threshold_percent?: number
+          overdue_alert_minutes?: number
           offer_timeout_seconds?: number
           random_pool_size?: number
           requested_threshold_percent?: number
@@ -284,6 +287,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           full_name: string
+          gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
           is_active: boolean
           phone: string | null
@@ -296,6 +300,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           full_name: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id: string
           is_active?: boolean
           phone?: string | null
@@ -308,6 +313,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           full_name?: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           is_active?: boolean
           phone?: string | null
@@ -759,12 +765,14 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          customer_gender: Database["public"]["Enums"]["gender_type"]
           customer_name: string
           customer_phone: string | null
           external_ref: string | null
           id: string
           is_requested: boolean
           note: string | null
+          overdue_notified_at: string | null
           requested_share_percent: number
           requested_technician_id: string | null
           started_at: string | null
@@ -780,12 +788,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          customer_gender?: Database["public"]["Enums"]["gender_type"]
           customer_name: string
           customer_phone?: string | null
           external_ref?: string | null
           id?: string
           is_requested?: boolean
           note?: string | null
+          overdue_notified_at?: string | null
           requested_share_percent?: number
           requested_technician_id?: string | null
           started_at?: string | null
@@ -801,12 +811,14 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          customer_gender?: Database["public"]["Enums"]["gender_type"]
           customer_name?: string
           customer_phone?: string | null
           external_ref?: string | null
           id?: string
           is_requested?: boolean
           note?: string | null
+          overdue_notified_at?: string | null
           requested_share_percent?: number
           requested_technician_id?: string | null
           started_at?: string | null
@@ -1120,6 +1132,7 @@ export type Database = {
       update_member_profile: {
         Args: {
           p_full_name: string
+          p_gender?: Database["public"]["Enums"]["gender_type"]
           p_id: string
           p_phone: string
           p_shift: Database["public"]["Enums"]["shift_type"]
@@ -1147,6 +1160,7 @@ export type Database = {
         | "expired"
         | "withdrawn"
       payroll_status: "open" | "locked"
+      gender_type: "male" | "female"
       shift_type: "morning" | "afternoon" | "full" | "off"
       tour_status:
         | "waiting"
@@ -1287,6 +1301,7 @@ export const Constants = {
       dispute_status: ["open", "resolved", "rejected"],
       offer_status: ["pending", "accepted", "declined", "expired", "withdrawn"],
       payroll_status: ["open", "locked"],
+      gender_type: ["male", "female"],
       shift_type: ["morning", "afternoon", "full", "off"],
       tour_status: [
         "waiting",

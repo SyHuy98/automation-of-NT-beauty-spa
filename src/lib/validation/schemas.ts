@@ -30,12 +30,14 @@ export const memberCreateSchema = z.object({
   password: passwordSchema,
   phone,
   role: z.enum(["technician", "manager"]),
+  gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.string().uuid()),
 });
 
 export const memberUpdateSchema = z.object({
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone,
+  gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.string().uuid()),
 });
 
@@ -59,6 +61,7 @@ export const tourCreateSchema = z
   .object({
     customer_name: z.string().trim().min(1, "Vui lòng nhập tên khách").max(120),
     customer_phone: phone,
+    customer_gender: z.enum(["male", "female"]),
     note: z.string().trim().max(1000, "Ghi chú tối đa 1000 ký tự"),
     service_ids: z.array(z.string().uuid()).min(1, "Chọn ít nhất 1 dịch vụ").max(10, "Tối đa 10 dịch vụ"),
     assign_mode: z.enum(["suggest", "auto", "random", "requested"]),
@@ -106,12 +109,11 @@ export const settingsSchema = z.object({
   weights: z.object({
     today: z.coerce.number().min(0).max(200),
     month: z.coerce.number().min(0).max(200),
-    requested: z.coerce.number().min(0).max(200),
     idle: z.coerce.number().min(0).max(200),
     shiftEnd: z.coerce.number().min(0).max(500),
     declines: z.coerce.number().min(0).max(200),
   }),
-  requested_threshold_percent: z.coerce.number().int().min(0).max(200),
+  overdue_alert_minutes: z.coerce.number().int().min(1, "Tối thiểu 1 phút").max(240, "Tối đa 240 phút"),
   imbalance_threshold_percent: z.coerce.number().int().min(0).max(200),
   random_pool_size: z.coerce.number().int().min(1).max(10),
   decline_reasons: z.array(z.string().trim().min(1).max(100)).min(1, "Cần ít nhất 1 lý do").max(15),

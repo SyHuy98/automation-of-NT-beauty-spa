@@ -105,7 +105,7 @@ describe("rankTechnicians – chấm điểm", () => {
       snapshot([tech({ id: "rich", todayEarnings: 900_000 }), tech({ id: "poor", todayEarnings: 150_000 })]),
     );
     expect(result.candidates[0].technicianId).toBe("poor");
-    expect(result.candidates[0].reasons).toContain("Hôm nay 150.000 ₫ (thấp nhất)");
+    expect(result.candidates[0].reasons).toContain("Hôm nay 150.000 ₫ – thấp nhất");
   });
 
   it("trừ điểm người có thu nhập tháng cao hơn trung bình nhóm", () => {
@@ -132,27 +132,63 @@ describe("rankTechnicians – chấm điểm", () => {
     expect(result.candidates).toHaveLength(2);
   });
 
-  it("phạt lệch do tour chỉ định khi vượt TB nhóm quá ngưỡng 20%", () => {
-    const techs = [
-      // TB nhóm = 1.200.000; ngưỡng = 1.440.000
-      tech({ id: "star", monthEarnings: 2_000_000, monthRequestedEarnings: 900_000 }),
-      tech({ id: "b", monthEarnings: 800_000 }),
-      tech({ id: "c", monthEarnings: 800_000 }),
-    ];
-    const result = rankTechnicians(snapshot(techs));
-    const star = result.candidates.find((c) => c.technicianId === "star")!;
-    // overshoot = 2.000.000 − 1.440.000 = 560.000 (< 900.000 tiền chỉ định) → 560/1200 ≈ 0,467 × 15
-    expect(star.breakdown.requested).toBeCloseTo(-7, 0);
-    expect(star.warnings).toContain("Tiền tour chỉ định đang vượt TB nhóm");
+  it("tour khách chỉ định KHÔNG tính vào cân bằng hôm nay", () => {
+    // star: 500k hôm nay nhưng 400k là khách chỉ định → tour thường chỉ 100k
+    const result = rankTechnicians(
+      snapshot([
+        tech({ id: "star", todayEarnings: 500_000, todayRequestedEarnings: 400_000 }),
+        tech({ id: "b", todayEarnings: 200_000 }),
+      ]),
+    );
+    expect(result.candidates[0].technicianId).toBe("star");
+    expect(result.candidates[0].reasons).toContain("Hôm nay 100.000 ₫ (+400.000 ₫ chỉ định) – thấp nhất");
   });
 
-  it("không phạt tour chỉ định khi chưa vượt ngưỡng", () => {
-    const techs = [
-      tech({ id: "a", monthEarnings: 1_300_000, monthRequestedEarnings: 500_000 }),
-      tech({ id: "b", monthEarnings: 1_100_000 }),
-    ];
-    const a = rankTechnicians(snapshot(techs)).candidates.find((c) => c.technicianId === "a")!;
-    expect(a.breakdown.requested).toBe(0);
+  it("giờ làm tour chỉ định được trừ khỏi giờ có mặt", () => {
+    // 15:00, cả 2 vào 09:00 (6 giờ). a: 300k tour thường nhưng mất 3 giờ làm khách chỉ định
+    // → 300k / 3 giờ = 100k/giờ; b: 360k / 6 giờ = 60k/giờ → b được ưu tiên
+    const result = rankTechnicians(
+      snapshot([
+        tech({ id: "a", todayEarnings: 300_000, todayRequestedMinutes: 180 }),
+        tech({ id: "b", todayEarnings: 360_000 }),
+      ]),
+    );
+    expect(result.candidates[0].technicianId).toBe("b");
+  });
+
+  it("tour khách chỉ định KHÔNG tính vào cân bằng tháng", () => {
+    const result = rankTechnicians(
+      snapshot([
+        // tháng 3tr nhưng 2,5tr là khách chỉ định → tour thường 500k (thấp nhất)
+        tech({ id: "star", monthEarnings: 3_000_000, monthRequestedEarnings: 2_500_000 }),
+        tech({ id: "b", monthEarnings: 1_000_000 }),
+      ]),
+    );
+    const star = result.candidates.find((c) => c.technicianId === "star")!;
+    expect(star.breakdown.month).toBeGreaterThan(0);
+    expect(result.candidates[0].technicianId).toBe("star");
+  });
+
+  it("tháng chia theo giờ có mặt: người nghỉ nhiều ngày không được ưu tiên quá đà", () => {
+    // a làm 20 giờ được 1tr (50k/giờ); b làm 100 giờ được 5tr (50k/giờ) → ngang nhau
+    const result = rankTechnicians(
+      snapshot([
+        tech({ id: "a", monthEarnings: 1_000_000, monthWorkedMinutes: 20 * 60 }),
+        tech({ id: "b", monthEarnings: 5_000_000, monthWorkedMinutes: 100 * 60 }),
+      ]),
+    );
+    for (const c of result.candidates) expect(c.breakdown.month).toBe(0);
+  });
+
+  it("KTV mới chưa có giờ làm trong tháng không kéo TB nhóm xuống", () => {
+    const result = rankTechnicians(
+      snapshot([
+        tech({ id: "a", monthEarnings: 1_000_000, monthWorkedMinutes: 20 * 60 }),
+        tech({ id: "b", monthEarnings: 2_000_000, monthWorkedMinutes: 40 * 60 }),
+        tech({ id: "new", monthEarnings: 0, monthWorkedMinutes: 0 }),
+      ]),
+    );
+    expect(result.groupMonthAverage).toBe(50_000);
   });
 
   it("chuẩn hoá ca chiều: vừa vào ca, 0đ không bị thiệt so với ca sáng có ít tour", () => {
@@ -218,6 +254,63 @@ describe("rankTechnicians – chấm điểm", () => {
       }),
     );
     expect(result.candidates.every((c) => c.score === 0)).toBe(true);
+  });
+});
+
+describe("rankTechnicians – giới tính", () => {
+  const team = () => [
+    tech({ id: "nu1", gender: "female", monthEarnings: 3_000_000 }),
+    tech({ id: "nu2", gender: "female", monthEarnings: 5_000_000 }),
+    tech({ id: "nam1", gender: "male", monthEarnings: 1_000_000 }),
+    tech({ id: "nam2", gender: "male", monthEarnings: 2_000_000 }),
+  ];
+
+  it("khách nữ: chỉ KTV nữ, KTV nam bị loại kèm lý do", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "female" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nu1", "nu2"]);
+    expect(r.excluded.find((e) => e.technicianId === "nam1")?.reason).toContain("Khách nữ");
+    expect(r.genderFallback).toBe(false);
+  });
+
+  it("khách nam: chỉ KTV nam khi còn KTV nam rảnh", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "male" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nam1", "nam2"]);
+    expect(r.genderFallback).toBe(false);
+  });
+
+  it("khách nam: không còn KTV nam rảnh → chuyển KTV nữ + cảnh báo", () => {
+    const techs = team().map((t) => (t.gender === "male" ? { ...t, isFree: false, busyReason: "Đang làm tour" } : t));
+    const r = rankTechnicians(snapshot(techs, { customerGender: "male" }));
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nu1", "nu2"]);
+    expect(r.genderFallback).toBe(true);
+    expect(r.candidates[0].warnings.join(" ")).toContain("không còn KTV nam");
+  });
+
+  it("khách nữ mà không còn KTV nữ rảnh → không chuyển KTV nam", () => {
+    const techs = team().map((t) => (t.gender === "female" ? { ...t, checkedIn: false } : t));
+    const r = rankTechnicians(snapshot(techs, { customerGender: "female" }));
+    expect(r.candidates).toEqual([]);
+    expect(r.message).toContain("KTV nữ");
+  });
+
+  it("trung bình tháng tính riêng từng nhóm giới tính", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "male" }));
+    expect(r.groupMonthAverages).toEqual({ male: 1_500_000, female: 4_000_000 });
+    expect(r.groupMonthAverage).toBe(1_500_000);
+    // nam1 1tr so với TB nam 1,5tr → dưới TB 33% (không bị so với nữ)
+    const nam1 = r.candidates.find((c) => c.technicianId === "nam1")!;
+    expect(nam1.monthDiffPercent).toBe(-33);
+    expect(nam1.reasons.join(" ")).toContain("dưới TB nam 33%");
+  });
+
+  it("thiếu thông tin giới tính KTV → coi là nữ", () => {
+    const r = rankTechnicians(snapshot([tech({ id: "x" }), tech({ id: "m", gender: "male" })], { customerGender: "female" }));
+    expect(r.candidates.map((c) => c.technicianId)).toEqual(["x"]);
+  });
+
+  it("không có giới tính khách → không lọc (giữ hành vi cũ)", () => {
+    const r = rankTechnicians(snapshot(team()));
+    expect(r.candidates).toHaveLength(4);
   });
 });
 

@@ -11,7 +11,7 @@ import { Avatar, Badge } from "@/components/ui/misc";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import { adminUsers } from "@/lib/admin-users";
-import { vnMonthStart, vnToday } from "@/lib/format";
+import { GENDER_LABEL, vnMonthStart, vnToday } from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { passwordSchema } from "@/lib/validation/schemas";
@@ -87,7 +87,7 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold text-espresso">{m.full_name}</p>
                     <p className="text-sm text-mocha">
-                      @{m.username}
+                      {role === "technician" && m.gender ? `${GENDER_LABEL[m.gender]} · ` : ""}@{m.username}
                       {m.phone ? ` · ${m.phone}` : ""}
                     </p>
                   </div>

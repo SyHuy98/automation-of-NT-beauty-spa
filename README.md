@@ -19,6 +19,7 @@ Toàn bộ giao diện tiếng Việt, tiền VND, mọi khái niệm "hôm nay 
 | CSDL, Auth, Realtime | Supabase (Postgres 17) – project `nt-beauty-spa` (Singapore) | RLS bật cho mọi bảng |
 | Logic ghi quan trọng | Postgres function (`accept_offer`, `complete_tour`…) | Transaction + `SELECT … FOR UPDATE` |
 | Hết hạn lời mời | `pg_cron` mỗi 20 giây + client gọi ngay khi đếm về 0 | Không phụ thuộc điện thoại KTV |
+| Nhắc tour quá giờ | `pg_cron` mỗi phút (`check_overdue_tours`) | Quá thời lượng + N phút (Cài đặt, mặc định 15) → báo quản lý (chuông) + push nhắc KTV bấm Hoàn thành |
 | Dọn nhật ký cron | `pg_cron` 02:30 mỗi đêm xoá `cron.job_run_details` cũ hơn 7 ngày | Tránh đầy 500 MB gói Free (~1 MB/ngày nếu để nguyên) |
 | Tự chuyển người kế tiếp | Edge Function `dispatch` (gọi từ Postgres qua `pg_net`) | Dùng chung thuật toán `src/lib/assignment` |
 | Web Push | Edge Function `send-push` (VAPID) | Trigger khi có offer mới / thông báo mới |
@@ -66,8 +67,13 @@ scripts/create-owner.ts   # tạo tài khoản chủ spa
 
 ### Thuật toán gợi ý (`src/lib/assignment/score.ts`)
 
-1. **Lọc**: tài khoản hoạt động, đã vào ca, đang rảnh, có đủ kỹ năng cho dịch vụ "cần kỹ năng riêng", chưa từ chối / để hết giờ chính tour đó.
-2. **Chấm điểm** (trọng số chỉnh ở Cài đặt): thu nhập hôm nay *chuẩn hoá theo số giờ đã làm* (ca chiều mới vào không bị thiệt), thu nhập tháng so với TB nhóm, phạt lệch do tour chỉ định (vượt TB quá ngưỡng 20%), thời gian rảnh, phạt mạnh nếu sắp hết ca, phạt nhẹ nếu từ chối nhiều.
+1. **Lọc**: tài khoản hoạt động, đã vào ca, đang rảnh, có đủ kỹ năng cho dịch vụ "cần kỹ năng riêng", chưa từ chối / để hết giờ chính tour đó. **Giới tính**: khách nữ → chỉ KTV nữ; khách nam → KTV nam, hết KTV nam rảnh mới chuyển KTV nữ.
+2. **Chấm điểm** (trọng số chỉnh ở Cài đặt) – cân bằng theo **tiền tour thường / giờ có mặt**:
+   - chỉ tính **tour thường**: tiền và thời gian làm tour khách chỉ định không tính vào phần chia chung;
+   - chia theo **giờ có mặt** trong ca (trừ giờ làm tour chỉ định) → vào trễ, ca chiều, làm cách ngày không bị thiệt/lợi;
+   - KTV chỉ so với người **cùng giới tính**;
+   - yếu tố chính (90): tiền tour thường cả tháng (gồm hôm nay) / giờ so với TB nhóm; phụ (10): riêng hôm nay; trừ 50 nếu sắp hết ca; trừ nhẹ nếu từ chối nhiều.
+   - `src/lib/assignment/__tests__/fairness.sim.test.ts` mô phỏng 20 ngày × 4 mức đông khách: mức lệch giữa các KTV ~1–4%, thấp hơn chia xoay vòng theo số tour.
 3. **Giải thích**: "Rảnh 25 phút · Hôm nay 180.000 ₫ (thấp nhất) · Tháng dưới TB 6%".
 
 ---

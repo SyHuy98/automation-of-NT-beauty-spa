@@ -1,4 +1,5 @@
-// Edge Function `send-push`: gửi Web Push (VAPID) cho offer mới & thông báo mới.
+// Edge Function `send-push`: gửi Web Push (VAPID) cho offer mới, thông báo mới và
+// nhắc tour quá giờ (check_overdue_tours).
 // Được trigger Postgres gọi qua pg_net (xem _notify_push) nên cả offer do hệ
 // thống tự tạo cũng có push.
 // Lần đầu chạy tự sinh cặp khoá VAPID và lưu vào private.config.
@@ -32,7 +33,9 @@ Deno.serve(async (req) => {
 
   const payload = (await req.json().catch(() => ({}))) as { kind?: string; id?: string };
   if (payload.kind === "init") return json({ ok: true, publicKey });
-  if (payload.kind !== "offer" && payload.kind !== "announcement") return json({ error: "kind không hợp lệ" }, 400);
+  if (payload.kind !== "offer" && payload.kind !== "announcement" && payload.kind !== "overdue") {
+    return json({ error: "kind không hợp lệ" }, 400);
+  }
 
   const { data, error } = await sb.rpc("push_targets", { p_kind: payload.kind, p_id: payload.id });
   if (error) return json({ error: error.message }, 500);
@@ -55,8 +58,8 @@ Deno.serve(async (req) => {
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           message,
           {
-            TTL: payload.kind === "offer" ? 180 : 86400,
-            urgency: payload.kind === "offer" ? "high" : "normal",
+            TTL: payload.kind === "offer" ? 180 : payload.kind === "overdue" ? 3600 : 86400,
+            urgency: payload.kind === "announcement" ? "normal" : "high",
             vapidDetails: { subject, publicKey: publicKey!, privateKey: privateKey! },
           },
         );

@@ -19,9 +19,8 @@ import { MembersPage } from "./members/members-page";
 
 type Shift = "morning" | "afternoon" | "full";
 const WEIGHT_LABEL: Record<keyof typeof DEFAULT_WEIGHTS, string> = {
-  today: "Thu nhập hôm nay (yếu tố chính)",
-  month: "Thu nhập tháng so với TB nhóm",
-  requested: "Phạt lệch do tour chỉ định",
+  today: "Tiền tour thường hôm nay (theo giờ)",
+  month: "Tiền tour thường cả tháng theo giờ (yếu tố chính)",
   idle: "Thời gian rảnh",
   shiftEnd: "Phạt gần hết ca",
   declines: "Phạt từ chối nhiều",
@@ -31,7 +30,7 @@ interface FormState {
   offer_timeout_seconds: string;
   shift_hours: Record<Shift, { start: string; end: string }>;
   weights: Record<keyof typeof DEFAULT_WEIGHTS, string>;
-  requested_threshold_percent: string;
+  overdue_alert_minutes: string;
   imbalance_threshold_percent: string;
   random_pool_size: string;
   decline_reasons: string[];
@@ -57,7 +56,7 @@ export function SettingsPage() {
         full: sh.full ?? { start: "09:00", end: "21:00" },
       },
       weights: Object.fromEntries(Object.entries(w).map(([k, v]) => [k, String(v)])) as FormState["weights"],
-      requested_threshold_percent: String(data.requested_threshold_percent),
+      overdue_alert_minutes: String(data.overdue_alert_minutes),
       imbalance_threshold_percent: String(data.imbalance_threshold_percent),
       random_pool_size: String(data.random_pool_size),
       decline_reasons: data.decline_reasons,
@@ -119,9 +118,13 @@ export function SettingsPage() {
               <Field label="Số ứng viên vào vòng Random" error={errors.random_pool_size} hint="Chọn ngẫu nhiên trong top N">
                 {(p) => <Input {...p} inputMode="numeric" value={form.random_pool_size} onChange={(e) => set("random_pool_size", e.target.value)} />}
               </Field>
-              <Field label="Ngưỡng lệch do tour chỉ định (%)" error={errors.requested_threshold_percent} hint="Vượt TB nhóm quá ngưỡng thì giảm ưu tiên tour thường">
+              <Field
+                label="Nhắc tour quá giờ sau (phút)"
+                error={errors.overdue_alert_minutes}
+                hint="Quá thời lượng dịch vụ bấy nhiêu phút thì báo quản lý (có chuông) và nhắc KTV bấm Hoàn thành"
+              >
                 {(p) => (
-                  <Input {...p} inputMode="numeric" value={form.requested_threshold_percent} onChange={(e) => set("requested_threshold_percent", e.target.value)} />
+                  <Input {...p} inputMode="numeric" value={form.overdue_alert_minutes} onChange={(e) => set("overdue_alert_minutes", e.target.value)} />
                 )}
               </Field>
               <Field label="Ngưỡng cảnh báo lệch thu nhập (%)" error={errors.imbalance_threshold_percent} hint="Đánh dấu trên biểu đồ cân bằng">
