@@ -6,7 +6,10 @@ import { cn } from "@/components/ui/cn";
 import { Money } from "@/components/ui/misc";
 import { formatMinutes } from "@/lib/format";
 import { matchesSearch } from "@/lib/search";
+import { Spinner } from "@/components/ui/spinner";
 import type { ServiceRow } from "@/types/app";
+
+const NO_SERVICES: ServiceRow[] = [];
 
 /**
  * Chọn 1 hoặc nhiều dịch vụ, tự cộng tổng tiền tour + thời lượng.
@@ -19,7 +22,8 @@ export function ServicePicker({
   onChange,
   error,
 }: {
-  services: ServiceRow[];
+  /** null = đang tải */
+  services: ServiceRow[] | null;
   selected: string[];
   onChange: (ids: string[]) => void;
   error?: string;
@@ -33,10 +37,11 @@ export function ServicePicker({
   const listId = useId();
 
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
-  const chosen = selected.map((id) => services.find((s) => s.id === id)).filter((s): s is ServiceRow => !!s);
+  const list = services ?? NO_SERVICES;
+  const chosen = selected.map((id) => list.find((s) => s.id === id)).filter((s): s is ServiceRow => !!s);
   const total = chosen.reduce((sum, s) => sum + s.tour_fee, 0);
   const minutes = chosen.reduce((sum, s) => sum + s.duration_minutes, 0);
-  const results = useMemo(() => services.filter((s) => matchesSearch(s.name, query)), [services, query]);
+  const results = useMemo(() => list.filter((s) => matchesSearch(s.name, query)), [list, query]);
   const activeIndex = Math.min(active, Math.max(0, results.length - 1));
 
   // Bấm ra ngoài thì đóng danh sách
@@ -55,6 +60,13 @@ export function ServicePicker({
     listRef.current?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, open]);
 
+  if (services === null) {
+    return (
+      <p className="flex items-center gap-2 rounded-xl border border-champagne p-4 text-sm text-mocha">
+        <Spinner className="h-4 w-4" /> Đang tải danh sách dịch vụ…
+      </p>
+    );
+  }
   if (services.length === 0) {
     return (
       <p className="rounded-xl border border-dashed border-champagne p-4 text-sm text-mocha">

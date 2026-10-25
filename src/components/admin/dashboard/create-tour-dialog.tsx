@@ -128,15 +128,24 @@ function CreateTourBody({
   };
 
   const submitMain = async () => {
+    if (serviceIds.length === 0) {
+      setErrors((e) => ({ ...e, service_ids: "Chọn ít nhất 1 dịch vụ" }));
+      toast.error("Chọn dịch vụ trước khi tạo tour");
+      return;
+    }
     setSubmitting(true);
     try {
       let ids: string[] = [];
       if (mode === "auto" || mode === "random") {
         // tính lại ngay lúc bấm để dùng dữ liệu mới nhất
         const fresh = await ranking.reload();
+        if (!fresh) {
+          // lỗi tải dữ liệu (mất mạng / hết phiên) – không phải "không có KTV rảnh"
+          toast.error("Không tải được danh sách KTV – kiểm tra mạng hoặc đăng nhập lại rồi thử lại");
+          return;
+        }
         const pick =
-          fresh &&
-          (mode === "auto" ? pickAuto(fresh.result) : pickWeightedRandom(fresh.result, fresh.snapshot.settings.randomPoolSize));
+          mode === "auto" ? pickAuto(fresh.result) : pickWeightedRandom(fresh.result, fresh.snapshot.settings.randomPoolSize);
         if (pick) ids = [pick.technicianId];
         else {
           playAlert();
@@ -251,7 +260,15 @@ function CreateTourBody({
           <p className="mb-2 text-sm font-medium text-mocha">
             Dịch vụ <span className="text-busy-ink">*</span>
           </p>
-          <ServicePicker services={services ?? []} selected={serviceIds} onChange={setServiceIds} error={errors.service_ids} />
+          <ServicePicker
+            services={services}
+            selected={serviceIds}
+            onChange={(ids) => {
+              setServiceIds(ids);
+              if (ids.length) setErrors((e) => ({ ...e, service_ids: "" }));
+            }}
+            error={errors.service_ids}
+          />
         </div>
 
         <Field label="Ghi chú" error={errors.note}>
