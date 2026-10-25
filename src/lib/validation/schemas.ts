@@ -54,6 +54,7 @@ export const serviceSchema = z.object({
     .min(1, "Tối thiểu 1 phút")
     .max(600, "Tối đa 600 phút"),
   requires_skill: z.boolean(),
+  any_gender: z.boolean(),
   sort_order: z.coerce.number().int().min(0).max(9999),
 });
 

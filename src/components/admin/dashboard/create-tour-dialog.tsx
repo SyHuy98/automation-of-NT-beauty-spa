@@ -149,6 +149,10 @@ function CreateTourBody({
     }
   };
 
+  // Tour chỉ gồm dịch vụ không phân biệt giới tính (tiêm meso, botox, HIFU…)
+  const genderFree =
+    serviceIds.length > 0 && serviceIds.every((id) => (services ?? []).some((s) => s.id === id && s.any_gender));
+
   const total = useMemo(
     () => (services ?? []).filter((s) => serviceIds.includes(s.id)).reduce((a, s) => a + s.tour_fee, 0),
     [services, serviceIds],
@@ -215,9 +219,11 @@ function CreateTourBody({
             ]}
           />
           <p className="mt-1 text-sm text-mocha">
-            {gender === "female"
-              ? "Chỉ phân cho KTV nữ."
-              : "Ưu tiên KTV nam; không còn KTV nam rảnh thì mới gợi ý KTV nữ."}
+            {genderFree
+              ? "Dịch vụ chuyên môn không phân biệt giới tính – KTV nam hoặc nữ có kỹ năng đều được."
+              : gender === "female"
+                ? "Chỉ phân cho KTV nữ."
+                : "Ưu tiên KTV nam; không còn KTV nam rảnh thì mới gợi ý KTV nữ."}
           </p>
         </div>
 
@@ -291,7 +297,7 @@ function CreateTourBody({
                 </Select>
               )}
             </Field>
-            {requestedTech && gender === "female" && requestedTech.gender === "male" ? (
+            {requestedTech && gender === "female" && requestedTech.gender === "male" && !genderFree ? (
               <p className="flex items-start gap-2 rounded-xl border border-pending/50 bg-pending/10 px-3 py-2 text-sm text-pending-ink">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 Khách nữ chỉ định KTV nam – vẫn tạo được vì khách đã chọn.

@@ -308,6 +308,28 @@ describe("rankTechnicians – giới tính", () => {
     expect(r.candidates.map((c) => c.technicianId)).toEqual(["x"]);
   });
 
+  it("dịch vụ không phân biệt giới tính: khách nữ vẫn được KTV nam có kỹ năng", () => {
+    const techs = [
+      tech({ id: "nu", gender: "female", skillServiceIds: [] }),
+      tech({ id: "nam-tiem", gender: "male", skillServiceIds: ["botox"] }),
+      tech({ id: "nu-tiem", gender: "female", skillServiceIds: ["botox"] }),
+    ];
+    const r = rankTechnicians(
+      snapshot(techs, { customerGender: "female", genderFree: true, requiredSkillServiceIds: ["botox"] }),
+    );
+    expect(r.genderFree).toBe(true);
+    expect(r.candidates.map((c) => c.technicianId).sort()).toEqual(["nam-tiem", "nu-tiem"]);
+    // KTV không có kỹ năng vẫn bị loại
+    expect(r.excluded.find((e) => e.technicianId === "nu")?.reason).toContain("kỹ năng");
+  });
+
+  it("dịch vụ không phân biệt giới tính: mỗi KTV vẫn so tiền với nhóm cùng giới", () => {
+    const r = rankTechnicians(snapshot(team(), { customerGender: "female", genderFree: true }));
+    const nam1 = r.candidates.find((c) => c.technicianId === "nam1")!;
+    expect(nam1.reasons.join(" ")).toContain("TB nam");
+    expect(r.candidates).toHaveLength(4);
+  });
+
   it("không có giới tính khách → không lọc (giữ hành vi cũ)", () => {
     const r = rankTechnicians(snapshot(team()));
     expect(r.candidates).toHaveLength(4);

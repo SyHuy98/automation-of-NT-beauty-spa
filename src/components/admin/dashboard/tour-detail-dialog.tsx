@@ -423,6 +423,7 @@ function EditTourBody({
         tour_fee: i.fee,
         duration_minutes: i.duration,
         requires_skill: false,
+        any_gender: false,
         is_active: false,
         sort_order: 9999,
         created_at: "",
@@ -527,8 +528,11 @@ function ReassignBody({
   const active = member.status === "accepted" || member.status === "working";
 
   const options = technicians.filter((t) => !tour.members.some((m) => m.technicianId === t.id));
-  // khách nữ chỉ KTV nữ (trừ tour khách chỉ định)
-  const womenOnly = tour.customerGender === "female" && !tour.isRequested;
+  // khách nữ chỉ KTV nữ (trừ tour khách chỉ định / tour chỉ gồm dịch vụ không phân biệt giới tính)
+  const { services } = useServices();
+  const genderFree =
+    tour.items.length > 0 && tour.items.every((i) => (services ?? []).some((s) => s.id === i.serviceId && s.any_gender));
+  const womenOnly = tour.customerGender === "female" && !tour.isRequested && !genderFree;
 
   const save = async () => {
     if (!newId) {
