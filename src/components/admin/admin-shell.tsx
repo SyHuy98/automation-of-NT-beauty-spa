@@ -78,7 +78,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
     }
   }, [toast]);
 
-  useRealtime("admin-alerts", [{ table: "admin_alerts" }], checkAlerts, { pollMs: 20_000 });
+  // cảnh báo nhỏ gọn → vẫn kiểm tra khi tab ẩn để chuông không bị lỡ
+  useRealtime("admin-alerts", [{ table: "admin_alerts" }], checkAlerts, { pollMs: 20_000, pollHidden: true });
 
   const items = NAV.filter((i) => !i.ownerOnly || profile.role === "owner");
 

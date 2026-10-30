@@ -16,15 +16,27 @@ export type ConnectionState = "connecting" | "online" | "offline";
  * Lắng nghe thay đổi (Realtime) trên các bảng rồi gọi `onChange` (đã debounce).
  * - Tự kết nối lại khi mất mạng; khi có mạng / quay lại tab thì gọi onChange để
  *   lấy dữ liệu mới nhất (phòng trường hợp lỡ sự kiện lúc mất kết nối).
- * - Có polling dự phòng (mặc định 30s) để không bao giờ "đứng hình".
+ * - Có polling dự phòng để không bao giờ "đứng hình": `pollMs` (mặc định 30s) khi
+ *   Realtime chưa kết nối; khi Realtime đang chạy tốt thì chỉ cần thưa hơn
+ *   (`onlinePollMs`, mặc định gấp 4 lần, tối thiểu 2 phút) vì thay đổi đã được báo
+ *   ngay. Tab đang ẩn thì không poll (quay lại tab sẽ tải mới ngay).
+ *   → giảm mạnh lưu lượng (egress) của gói Supabase Free.
  */
 export function useRealtime(
   channelName: string,
   tables: RealtimeTable[],
   onChange: () => void,
-  options: { debounceMs?: number; pollMs?: number; enabled?: boolean } = {},
+  options: {
+    debounceMs?: number;
+    pollMs?: number;
+    onlinePollMs?: number;
+    /** vẫn poll khi tab ẩn (vd. chuông cảnh báo của quản lý) */
+    pollHidden?: boolean;
+    enabled?: boolean;
+  } = {},
 ): ConnectionState {
-  const { debounceMs = 250, pollMs = 30_000, enabled = true } = options;
+  const { debounceMs = 250, pollMs = 30_000, pollHidden = false, enabled = true } = options;
+  const onlinePollMs = options.onlinePollMs ?? Math.max(120_000, pollMs * 4);
   const [state, setState] = useState<ConnectionState>("connecting");
   const cb = useRef(onChange);
   const key = JSON.stringify(tables);
@@ -40,9 +52,15 @@ export function useRealtime(
     let channel: RealtimeChannel | null = null;
     let retry: ReturnType<typeof setTimeout> | null = null;
     let disposed = false;
+    let online = false;
+    let last = Date.now();
+    const run = () => {
+      last = Date.now();
+      cb.current();
+    };
     const fire = () => {
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => cb.current(), debounceMs);
+      timer = setTimeout(run, debounceMs);
     };
 
     const subscribe = () => {
@@ -58,9 +76,11 @@ export function useRealtime(
       channel.subscribe((status) => {
         if (disposed) return;
         if (status === "SUBSCRIBED") {
+          online = true;
           setState("online");
           fire(); // đồng bộ lại sau khi (re)connect
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          online = false;
           setState(navigator.onLine ? "connecting" : "offline");
           // thử lại sau vài giây với channel mới
           if (channel) supabase.removeChannel(channel);
@@ -88,7 +108,14 @@ export function useRealtime(
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
     document.addEventListener("visibilitychange", onVisible);
-    const poll = pollMs > 0 ? setInterval(() => cb.current(), pollMs) : null;
+    // mỗi lần tải (do sự kiện hay do poll) đều tính lại mốc → poll chỉ chạy khi đã lâu không có gì mới
+    const poll =
+      pollMs > 0
+        ? setInterval(() => {
+            if (!pollHidden && document.visibilityState === "hidden") return;
+            if (Date.now() - last >= (online ? onlinePollMs : pollMs) - 1000) run();
+          }, pollMs)
+        : null;
 
     return () => {
       disposed = true;
@@ -100,7 +127,7 @@ export function useRealtime(
       document.removeEventListener("visibilitychange", onVisible);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [channelName, key, debounceMs, pollMs, enabled]);
+  }, [channelName, key, debounceMs, pollMs, onlinePollMs, pollHidden, enabled]);
 
   return state;
 }

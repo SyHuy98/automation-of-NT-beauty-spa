@@ -325,7 +325,9 @@ function SendOfferDialog({
     const { data, error } = await getSupabaseBrowser().rpc("send_offer", {
       p_tour_id: tour.id,
       p_technician_id: c.technicianId,
-      p_share_percent: tour.teamSize === 1 ? 100 : openShare,
+      // tour 2 KTV: để server tự chia – còn 2 chỗ thì chia đôi, còn 1 chỗ thì lấy phần còn lại
+      // (gửi cả 100% cho 1 người khi còn chỗ thứ 2 sẽ làm tour kẹt mãi)
+      ...(tour.teamSize === 1 ? { p_share_percent: 100 } : {}),
     });
     setBusy(null);
     if (error) {
@@ -340,7 +342,12 @@ function SendOfferDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title={`Gửi tour ${tour.code} cho KTV`} size="md">
-      {tour.teamSize === 2 ? <p className="mb-3 text-sm text-mocha">Phần chia tiền còn lại: {openShare}%</p> : null}
+      {tour.teamSize === 2 ? (
+        <p className="mb-3 text-sm text-mocha">
+          Phần chia tiền còn lại: {openShare}%
+          {tour.members.length + tour.pendingOffers.length === 0 ? " – chia đôi cho 2 người, sửa tỷ lệ sau khi đủ người" : ""}
+        </p>
+      ) : null}
       <CandidateList
         result={ranking.result}
         loading={ranking.loading}
@@ -401,7 +408,8 @@ function EditTourBody({
     if (allowAny !== tour.allowAnyGender) p.allow_any_gender = allowAny;
     const original = (tour.items.map((i) => i.serviceId) as string[]).join(",");
     if (serviceIds.join(",") !== original) p.service_ids = serviceIds;
-    if (tour.members.length > 1) {
+    const sharesChanged = tour.members.some((m) => (shares[m.technicianId] ?? 0) !== m.sharePercent);
+    if (tour.members.length > 1 && sharesChanged) {
       const total = Object.values(shares).reduce((a, b) => a + b, 0);
       if (total !== 100) {
         setError("Tổng tỷ lệ chia phải bằng 100%");
@@ -541,11 +549,13 @@ function ReassignBody({
   const active = member.status === "accepted" || member.status === "working";
 
   const options = technicians.filter((t) => !tour.members.some((m) => m.technicianId === t.id));
-  // khách nữ chỉ KTV nữ (trừ tour khách chỉ định / tour chỉ gồm dịch vụ không phân biệt giới tính)
+  // Tour chưa xong: khách nữ chỉ KTV nữ (trừ tour chỉ gồm dịch vụ không phân biệt giới tính).
+  // Người thay KTV khách chỉ định / người làm cùng cũng theo luật này.
+  // Tour đã xong là sửa lại cho đúng người đã làm → không chặn.
   const { services } = useServices();
   const genderFree =
     tour.items.length > 0 && tour.items.every((i) => (services ?? []).some((s) => s.id === i.serviceId && s.any_gender));
-  const womenOnly = tour.customerGender === "female" && !tour.isRequested && !genderFree;
+  const womenOnly = tour.status !== "completed" && tour.customerGender === "female" && !genderFree;
 
   const save = async () => {
     if (!newId) {
