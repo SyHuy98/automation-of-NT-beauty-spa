@@ -21,6 +21,8 @@ Toàn bộ giao diện tiếng Việt, tiền VND, mọi khái niệm "hôm nay 
 | Hết hạn lời mời | `pg_cron` mỗi 20 giây + client gọi ngay khi đếm về 0 | Không phụ thuộc điện thoại KTV |
 | Nhắc tour quá giờ | `pg_cron` mỗi phút (`check_overdue_tours`) | Quá thời lượng + N phút (Cài đặt, mặc định 15) → báo quản lý (chuông) + push nhắc KTV bấm Hoàn thành |
 | Dọn nhật ký cron | `pg_cron` 02:30 mỗi đêm xoá `cron.job_run_details` cũ hơn 7 ngày | Tránh đầy 500 MB gói Free (~1 MB/ngày nếu để nguyên) |
+| Tour khách chỉ định đang chờ | `pg_cron` mỗi phút (`dispatch_requested_waiting`) + ngay khi KTV rảnh | KTV chỉ định rảnh mà lỡ sự kiện vẫn được gửi lời mời |
+| Làm mới dữ liệu | Realtime + poll dự phòng | Realtime đang chạy → poll 2 phút/lần; mất Realtime → 20–30 giây; tab ẩn → không poll. Giữ egress dưới 5 GB gói Free |
 | Tự chuyển người kế tiếp | Edge Function `dispatch` (gọi từ Postgres qua `pg_net`) | Dùng chung thuật toán `src/lib/assignment` |
 | Web Push | Edge Function `send-push` (VAPID) | Trigger khi có offer mới / thông báo mới |
 | Quản lý tài khoản | Edge Function `admin-users` | Dùng service role **có sẵn trong Supabase** |
@@ -162,7 +164,7 @@ Kiểm thử nghiệp vụ trên DB: dán `supabase/tests/smoke.sql` vào SQL Ed
 3. **Ca làm theo ngày**: KTV tự chọn ca khi bấm *Vào ca*. Nếu muốn xếp trước, vào **Lịch ca** bấm ô để đổi — → Sáng → Chiều → Full → Nghỉ; ca đã xếp sẽ được chọn sẵn khi KTV vào ca (KTV vẫn đổi được).
 4. Hướng dẫn KTV **cài app vào màn hình chính và bật thông báo**: trang `/huong-dan`.
 5. Hằng ngày: KTV bấm **Vào ca** → admin **Tạo tour** → theo dõi Bảng điều phối (cảnh báo có âm thanh khi KTV từ chối / hết giờ).
-6. Cuối tháng: **Chốt lương** → xử lý báo sai (mở tour để sửa có lý do) → **Xuất Excel** → **Chốt sổ**.
+6. Cuối kỳ: **Chốt lương** → xử lý báo sai (mở tour để sửa có lý do) → **Xuất Excel** → **Chốt sổ** (chỉ chốt được kỳ đã kết thúc, vd. kỳ 21/10–20/11 chốt từ ngày 21/11).
 
 ---
 

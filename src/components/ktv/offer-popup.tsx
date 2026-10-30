@@ -63,8 +63,10 @@ function OfferCard({
     expiredSent.current = offer.id;
     void getSupabaseBrowser()
       .rpc("expire_offer", { p_offer_id: offer.id })
-      .then(() => {
-        toast.warning("Lời mời đã hết giờ");
+      .then(({ data: expired }) => {
+        if (expired) toast.warning("Lời mời đã hết giờ");
+        // server chưa coi là hết giờ (lệch đồng hồ) → vài giây sau thử lại
+        else setTimeout(() => (expiredSent.current = null), 3000);
         void refetch();
       });
   }, [offer, remaining, refetch, toast]);

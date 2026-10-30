@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createTourAction, type CreatedTour } from "@/app/actions/tours";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -73,13 +73,23 @@ function CreateTourBody({
   const requestedTech = technicians.find((t) => t.id === requestedId);
   const requestedStatus = requestedTech ? techStatus(requestedTech) : null;
 
+  // Đổi dịch vụ / giới tính có thể làm KTV đã chọn không còn phù hợp → bỏ khỏi lựa chọn
+  // (không thì họ bị ẩn khỏi danh sách mà vẫn tính là đã chọn, không bỏ chọn được)
+  const okIds = ranking.result ? new Set(ranking.result.candidates.map((c) => c.technicianId)) : null;
+  const chosen = okIds ? selected.filter((id) => okIds.has(id)) : selected;
+  const partner = partnerId && (!okIds || okIds.has(partnerId)) ? partnerId : "";
+  const nameOf = (id: string | undefined) => technicians.find((t) => t.id === id)?.fullName;
+
   const offersFor = (ids: string[]) =>
     ids.length === 2
       ? [
           { technician_id: ids[0], share_percent: shareA },
           { technician_id: ids[1], share_percent: 100 - shareA },
         ]
-      : ids.map((id) => ({ technician_id: id, share_percent: 100 }));
+      : pair
+        ? // tour 2 KTV mới mời 1 người (KTV chỉ định, chưa chọn người làm cùng): giữ phần còn lại
+          ids.map((id) => ({ technician_id: id, share_percent: shareA }))
+        : ids.map((id) => ({ technician_id: id, share_percent: 100 }));
 
   const submit = async (offerIds: string[], modeOverride?: AssignMode) => {
     const payload = {
@@ -100,7 +110,15 @@ function CreateTourBody({
       return null;
     }
     setErrors({});
-    const res = await createTourAction(parsed.data);
+    let res: Awaited<ReturnType<typeof createTourAction>>;
+    try {
+      res = await createTourAction(parsed.data);
+    } catch {
+      // mất mạng giữa chừng: tour có thể đã được tạo → kiểm tra trước khi tạo lại
+      toast.error("Mất kết nối khi tạo tour – kiểm tra danh sách tour trước khi tạo lại để tránh trùng");
+      onCreated();
+      return null;
+    }
     if (!res.ok) {
       if (res.fieldErrors) setErrors(res.fieldErrors);
       toast.error(res.error);
@@ -119,12 +137,22 @@ function CreateTourBody({
     onOpenChange(false);
   };
 
+  // Chỉ 1 thao tác tạo tour tại một thời điểm (bấm "Gửi" và nút chính cùng lúc → 2 tour)
+  const inFlight = useRef(false);
+  const busy = submitting || !!busyId;
+
   // Gợi ý – tour 1 KTV: bấm "Gửi" ngay trên dòng ứng viên
   const sendTo = async (c: RankedCandidate) => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusyId(c.technicianId);
-    const tour = await submit([c.technicianId]);
-    setBusyId(null);
-    if (tour) report(tour);
+    try {
+      const tour = await submit([c.technicianId]);
+      if (tour) report(tour);
+    } finally {
+      inFlight.current = false;
+      setBusyId(null);
+    }
   };
 
   const submitMain = async () => {
@@ -133,6 +161,8 @@ function CreateTourBody({
       toast.error("Chọn dịch vụ trước khi tạo tour");
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
     setSubmitting(true);
     try {
       let ids: string[] = [];
@@ -152,13 +182,14 @@ function CreateTourBody({
           toast.warning("Hiện không có KTV rảnh phù hợp – tour sẽ chờ và tự gửi khi có người rảnh");
         }
       } else if (mode === "requested") {
-        ids = pair ? [requestedId, partnerId].filter(Boolean) : [requestedId];
+        ids = pair ? [requestedId, partner].filter(Boolean) : [requestedId];
       } else if (pair) {
-        ids = selected;
+        ids = chosen;
       }
       const tour = await submit(ids);
       if (tour) report(tour);
     } finally {
+      inFlight.current = false;
       setSubmitting(false);
     }
   };
@@ -199,7 +230,7 @@ function CreateTourBody({
             variant={mode === "suggest" && !pair ? "secondary" : "primary"}
             onClick={submitMain}
             loading={submitting}
-            disabled={(mode === "suggest" && pair && selected.length !== 2) || !!busyId}
+            disabled={(mode === "suggest" && pair && (chosen.length !== 2 || ranking.loading)) || busy}
           >
             {mainLabel}
           </Button>
@@ -302,7 +333,14 @@ function CreateTourBody({
           />
           {pair ? (
             <div className="flex flex-wrap items-center gap-3">
-              <Field label="Tỷ lệ người thứ nhất (%)" className="w-44">
+              <Field
+                label={`Tỷ lệ ${
+                  mode === "requested"
+                    ? `KTV chỉ định${requestedTech ? ` (${requestedTech.fullName})` : ""}`
+                    : (nameOf(chosen[0]) ?? "người chọn trước")
+                } (%)`}
+                className="w-56"
+              >
                 {(p) => (
                   <Input
                     {...p}
@@ -314,7 +352,12 @@ function CreateTourBody({
                   />
                 )}
               </Field>
-              <p className="pt-6 text-sm text-mocha">Người thứ hai: {100 - shareA}%</p>
+              <p className="pt-6 text-sm text-mocha">
+                {mode === "requested"
+                  ? `KTV làm cùng${nameOf(partner) ? ` (${nameOf(partner)})` : ""}`
+                  : (nameOf(chosen[1]) ?? "Người thứ hai")}
+                : {100 - shareA}%
+              </p>
               {errors.offers ? <p className="w-full text-sm text-busy-ink">{errors.offers}</p> : null}
             </div>
           ) : null}
@@ -350,7 +393,7 @@ function CreateTourBody({
             {pair ? (
               <Field label="KTV làm cùng">
                 {(p) => (
-                  <Select {...p} value={partnerId} onChange={(e) => setPartnerId(e.target.value)}>
+                  <Select {...p} value={partner} onChange={(e) => setPartnerId(e.target.value)}>
                     <option value="">— Chọn KTV thứ hai —</option>
                     {(ranking.result?.candidates ?? [])
                       .filter((c) => c.technicianId !== requestedId)
@@ -376,11 +419,11 @@ function CreateTourBody({
               onReload={ranking.reload}
               actionLabel="Gửi"
               onAction={pair ? undefined : sendTo}
-              actionBusyId={busyId}
+              actionBusyId={busyId ?? (submitting ? "submitting" : null)}
               selectable={pair}
-              selected={selected}
+              selected={chosen}
               max={2}
-              onToggle={(id) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id].slice(0, 2)))}
+              onToggle={(id) => setSelected(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id].slice(0, 2))}
             />
           </div>
         ) : null}

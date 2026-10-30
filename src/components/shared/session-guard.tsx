@@ -20,8 +20,11 @@ export function SessionGuard({ userId }: { userId: string }) {
     const supabase = getSupabaseBrowser();
     let stopped = false;
     const check = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (stopped) return;
+      const { data, error } = await supabase.auth.getSession();
+      // lỗi mạng khi làm mới phiên (vd. điện thoại vừa mở lại, chưa có mạng) ≠ đã
+      // đăng xuất → giữ nguyên, lần kiểm tra sau sẽ rõ. Đăng xuất thật thì
+      // onAuthStateChange báo SIGNED_OUT và getSession trả về không có lỗi.
+      if (stopped || error) return;
       const uid = data.session?.user.id ?? null;
       setLost(uid === userId ? null : uid ? "switched" : "signed_out");
     };

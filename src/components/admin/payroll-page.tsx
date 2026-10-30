@@ -27,6 +27,25 @@ type Dispute = Database["public"]["Tables"]["earning_disputes"]["Row"] & {
   tour: { code: string; customer_name: string } | null;
 };
 
+const PAGE = 1000; // giới hạn số dòng mỗi lần đọc của API (max_rows)
+
+/** Đọc đủ mọi dòng tiền tour (kỳ đông có thể hơn 1000 dòng) */
+async function fetchLines(range: { month: string } | { from: string; to: string }): Promise<EarningLine[]> {
+  const supabase = getSupabaseBrowser();
+  const out: EarningLine[] = [];
+  for (let start = 0; ; start += PAGE) {
+    const base = supabase.from("earning_lines").select("*");
+    const filtered = "month" in range ? base.eq("month", range.month) : base.gte("work_date", range.from).lte("work_date", range.to);
+    const { data, error } = await filtered
+      .order("completed_at")
+      .order("assignment_id")
+      .range(start, start + PAGE - 1);
+    if (error) throw error;
+    out.push(...((data ?? []) as EarningLine[]));
+    if (!data || data.length < PAGE) return out;
+  }
+}
+
 export function PayrollPage() {
   const pp = usePayPeriodSettings();
   if (!pp) return <LoadingBlock />;
@@ -52,21 +71,21 @@ function PayrollBody({ startDay, currentPeriod }: { startDay: number; currentPer
     const supabase = getSupabaseBrowser();
     if (!month) {
       // Khoảng ngày tự chọn
-      const [s, l] = await Promise.all([
+      const [s, lines] = await Promise.all([
         supabase.rpc("earnings_summary", { p_from: from, p_to: to }),
-        supabase.from("earning_lines").select("*").gte("work_date", from).lte("work_date", to).order("completed_at"),
+        fetchLines({ from, to }),
       ]);
       if (s.error) throw s.error;
       return {
         summary: (s.data ?? []).map((r) => ({ ...r, open_disputes: 0 })) as SummaryRow[],
-        lines: (l.data ?? []) as EarningLine[],
+        lines,
         disputes: [] as Dispute[],
         locked: null,
       };
     }
     const [s, l, d, p] = await Promise.all([
       supabase.rpc("payroll_summary", { p_month: month }),
-      supabase.from("earning_lines").select("*").eq("month", month).order("completed_at"),
+      fetchLines({ month }),
       supabase
         .from("earning_disputes")
         .select("*, technician:profiles!earning_disputes_technician_id_fkey(full_name), tour:tours(code, customer_name)")
@@ -75,9 +94,10 @@ function PayrollBody({ startDay, currentPeriod }: { startDay: number; currentPer
       supabase.from("payroll_periods").select("status, locked_at").eq("month", month).maybeSingle(),
     ]);
     if (s.error) throw s.error;
+    if (d.error) throw d.error;
     return {
       summary: s.data as SummaryRow[],
-      lines: (l.data ?? []) as EarningLine[],
+      lines: l,
       disputes: (d.data as unknown as Dispute[]) ?? [],
       locked: p.data ?? null,
     };
@@ -99,7 +119,7 @@ function PayrollBody({ startDay, currentPeriod }: { startDay: number; currentPer
     if (!summary) return;
     setExporting(true);
     try {
-      await exportPayrollExcel(label, `${from}_${to}`, summary, lines);
+      await exportPayrollExcel(label, month ? `ky-${month.slice(0, 7)}` : `${from}_${to}`, summary, lines);
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -127,7 +147,12 @@ function PayrollBody({ startDay, currentPeriod }: { startDay: number; currentPer
                   <Unlock className="h-4 w-4" /> Mở sổ
                 </Button>
               ) : (
-                <Button onClick={() => setConfirmLock("lock")}>
+                <Button
+                  onClick={() => setConfirmLock("lock")}
+                  // chốt kỳ đang chạy sẽ làm KTV không bấm Hoàn thành được tour
+                  disabled={month >= currentPeriod}
+                  title={month >= currentPeriod ? "Chỉ chốt sổ được kỳ đã kết thúc" : undefined}
+                >
                   <Lock className="h-4 w-4" /> Chốt sổ
                 </Button>
               )

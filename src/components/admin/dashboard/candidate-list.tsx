@@ -84,7 +84,8 @@ export function CandidateList({
       <ul className="space-y-2">
         {list.map((c, idx) => {
           const isSel = selected.includes(c.technicianId);
-          const disabled = selectable && !isSel && selected.length >= max;
+          // đang tải lại theo dịch vụ / giới tính mới → chưa cho chọn thêm từ danh sách cũ
+          const disabled = selectable && !isSel && (selected.length >= max || loading);
           return (
             <li
               key={c.technicianId}
@@ -119,7 +120,12 @@ export function CandidateList({
                   {isSel ? "Đã chọn" : "Chọn"}
                 </Button>
               ) : onAction ? (
-                <Button size="sm" onClick={() => onAction(c)} loading={actionBusyId === c.technicianId} disabled={!!actionBusyId}>
+                <Button
+                  size="sm"
+                  onClick={() => onAction(c)}
+                  loading={actionBusyId === c.technicianId}
+                  disabled={!!actionBusyId || loading}
+                >
                   {actionLabel ?? "Chọn"}
                 </Button>
               ) : null}

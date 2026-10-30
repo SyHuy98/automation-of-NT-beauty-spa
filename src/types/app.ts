@@ -45,6 +45,10 @@ export interface DashboardTechnician {
   monthRequestedAmount: number;
   todayRequestedAmount: number;
   todayTours: number;
+  /** Phút có mặt trong ca của kỳ lương này (ca đang mở tính đến hiện tại) */
+  monthWorkedMinutes: number;
+  /** Phút làm tour khách chỉ định trong kỳ (không tính vào cân bằng) */
+  monthRequestedMinutes: number;
   lastTourEndedAt: string | null;
 }
 

@@ -27,9 +27,15 @@ export function KtvDataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const lastOfferId = useRef<string | null | undefined>(undefined);
   const inflight = useRef<Promise<void> | null>(null);
+  // có sự kiện mới trong lúc đang tải → tải thêm 1 lần sau đó (lần đang chạy có thể
+  // đã đọc DB trước khi thay đổi được ghi, vd. lời mời mới)
+  const dirty = useRef(false);
 
-  const refetch = useCallback(async () => {
-    if (inflight.current) return inflight.current;
+  const refetch = useCallback(async (): Promise<void> => {
+    if (inflight.current) {
+      dirty.current = true;
+      return inflight.current;
+    }
     const run = (async () => {
       try {
         const { data: snap, error: err } = await getSupabaseBrowser().rpc("my_snapshot");
@@ -49,10 +55,15 @@ export function KtvDataProvider({ children }: { children: ReactNode }) {
       } finally {
         inflight.current = null;
       }
+      if (dirty.current) {
+        dirty.current = false;
+        await refetchRef.current();
+      }
     })();
     inflight.current = run;
     return run;
   }, []);
+  const refetchRef = useRef(refetch);
 
   useEffect(() => {
     void refetch();

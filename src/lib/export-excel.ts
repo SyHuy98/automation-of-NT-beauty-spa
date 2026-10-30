@@ -64,7 +64,7 @@ export async function exportPayrollExcel(monthLabel: string, monthKey: string, s
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tien-tour-${monthKey.slice(0, 7)}.xlsx`;
+  a.download = `tien-tour-${monthKey}.xlsx`;
   document.body.appendChild(a);
   a.click();
   a.remove();

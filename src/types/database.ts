@@ -412,6 +412,7 @@ export type Database = {
           shift: Database["public"]["Enums"]["shift_type"]
           technician_id: string
           work_date: string
+          worked_minutes_before: number
         }
         Insert: {
           check_in_at?: string
@@ -420,6 +421,7 @@ export type Database = {
           shift: Database["public"]["Enums"]["shift_type"]
           technician_id: string
           work_date: string
+          worked_minutes_before?: number
         }
         Update: {
           check_in_at?: string
@@ -428,6 +430,7 @@ export type Database = {
           shift?: Database["public"]["Enums"]["shift_type"]
           technician_id?: string
           work_date?: string
+          worked_minutes_before?: number
         }
         Relationships: [
           {
