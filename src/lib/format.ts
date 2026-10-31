@@ -111,6 +111,7 @@ export const GENDER_LABEL: Record<"male" | "female", string> = { male: "Nam", fe
 export const ROLE_LABEL: Record<string, string> = {
   owner: "Chủ spa",
   manager: "Quản lý ca",
+  receptionist: "Lễ tân",
   technician: "Kỹ thuật viên",
 };
 

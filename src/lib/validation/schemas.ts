@@ -38,7 +38,7 @@ export const memberCreateSchema = z.object({
   username: usernameSchema,
   password: passwordSchema,
   phone,
-  role: z.enum(["technician", "manager"]),
+  role: z.enum(["technician", "manager", "receptionist"]),
   gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.string().uuid()),
 });

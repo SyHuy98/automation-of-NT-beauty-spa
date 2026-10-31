@@ -27,7 +27,7 @@ function MemberDialogBody({
   currentSkills,
   onSaved,
 }: {
-  role: "technician" | "manager";
+  role: "technician" | "manager" | "receptionist";
   member: ProfileRow | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -98,7 +98,13 @@ function MemberDialogBody({
     }
   };
 
-  const title = isNew ? (role === "technician" ? "Thêm Kỹ thuật viên" : "Thêm tài khoản quản lý") : `Sửa ${member?.full_name}`;
+  const title = isNew
+    ? role === "technician"
+      ? "Thêm Kỹ thuật viên"
+      : role === "receptionist"
+        ? "Thêm tài khoản lễ tân"
+        : "Thêm tài khoản quản lý"
+    : `Sửa ${member?.full_name}`;
 
   return (
     <Dialog

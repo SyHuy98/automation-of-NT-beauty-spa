@@ -64,6 +64,8 @@ export async function proxy(request: NextRequest) {
     if (isLogin || path === "/") return redirectTo(home);
     if (isAdminArea && profile.role === "technician") return redirectTo("/ktv");
     if (isKtvArea && profile.role !== "technician") return redirectTo("/admin");
+    // Lễ tân chỉ dùng Bảng điều phối
+    if (isAdminArea && profile.role === "receptionist" && path !== "/admin") return redirectTo("/admin");
   }
 
   return response;
