@@ -20,7 +20,7 @@ import {
 } from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { reasonSchema } from "@/lib/validation/schemas";
+import { reasonSchema, toPhoneLast4 } from "@/lib/validation/schemas";
 import { techStatus, TECH_STATUS_LABEL, type DashboardTechnician, type DashboardTour, type Gender } from "@/types/app";
 import type { Json } from "@/types/database";
 import { useServices } from "../use-dashboard";
@@ -155,7 +155,7 @@ export function TourDetailDialog({
                 tour.allowAnyGender ? " (đồng ý KTV nữ)" : ""
               }`}
             />
-            <Info label="Điện thoại" value={tour.customerPhone ?? "—"} />
+            <Info label="4 số cuối SĐT" value={tour.customerPhone ?? "—"} />
             {tour.note ? <Info label="Ghi chú" value={tour.note} className="sm:col-span-2" /> : null}
             {tour.cancelledReason ? <Info label="Lý do huỷ" value={tour.cancelledReason} className="sm:col-span-2" /> : null}
             {tour.status === "waiting" && tour.requestedTechnicianName ? (
@@ -402,6 +402,10 @@ function EditTourBody({
       setError("Tour phải có ít nhất 1 dịch vụ");
       return;
     }
+    if (phone && phone.length !== 4) {
+      setError("Nhập đúng 4 số cuối số điện thoại");
+      return;
+    }
     const p: Record<string, unknown> = { customer_name: name, customer_phone: phone, note };
     if (gender !== tour.customerGender) p.customer_gender = gender;
     const allowAny = gender === "male" && allowFemale;
@@ -469,8 +473,17 @@ function EditTourBody({
           <Field label="Tên khách" required>
             {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} />}
           </Field>
-          <Field label="Số điện thoại">
-            {(p) => <Input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} />}
+          <Field label="4 số cuối SĐT">
+            {(p) => (
+              <Input
+                {...p}
+                value={phone}
+                onChange={(e) => setPhone(toPhoneLast4(e.target.value))}
+                inputMode="numeric"
+                placeholder="vd: 5678"
+                autoComplete="off"
+              />
+            )}
           </Field>
         </div>
         <div>

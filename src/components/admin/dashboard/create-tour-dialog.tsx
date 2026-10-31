@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { pickAuto, pickWeightedRandom, type RankedCandidate } from "@/lib/assignment";
 import { playAlert } from "@/lib/alerts";
 import { ASSIGN_MODE_LABEL, GENDER_LABEL } from "@/lib/format";
-import { tourCreateSchema, fieldErrors } from "@/lib/validation/schemas";
+import { tourCreateSchema, fieldErrors, toPhoneLast4 } from "@/lib/validation/schemas";
 import { techStatus, TECH_STATUS_LABEL, type AssignMode, type DashboardTechnician, type Gender } from "@/types/app";
 import { useServices } from "../use-dashboard";
 import { CandidateList } from "./candidate-list";
@@ -242,8 +242,17 @@ function CreateTourBody({
           <Field label="Tên khách" required error={errors.customer_name}>
             {(p) => <Input {...p} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="vd: Chị Hương" />}
           </Field>
-          <Field label="Số điện thoại" error={errors.customer_phone} hint="Không bắt buộc">
-            {(p) => <Input {...p} value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />}
+          <Field label="4 số cuối SĐT" error={errors.customer_phone} hint="Không bắt buộc">
+            {(p) => (
+              <Input
+                {...p}
+                value={phone}
+                onChange={(e) => setPhone(toPhoneLast4(e.target.value))}
+                inputMode="numeric"
+                placeholder="vd: 5678"
+                autoComplete="off"
+              />
+            )}
           </Field>
         </div>
 
