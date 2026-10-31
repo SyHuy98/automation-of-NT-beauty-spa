@@ -32,7 +32,7 @@ interface Stats {
   expired: number;
 }
 
-export function MembersPage({ role, embedded }: { role: "technician" | "manager"; embedded?: boolean }) {
+export function MembersPage({ role, embedded }: { role: "technician" | "manager" | "receptionist"; embedded?: boolean }) {
   const me = useSession();
   const isOwner = me.role === "owner";
   const toast = useToast();
@@ -72,7 +72,7 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
   const stats = query.data?.stats ?? EMPTY_STATS;
 
   const serviceName = useMemo(() => new Map(services.map((s) => [s.id, s.name])), [services]);
-  const label = role === "technician" ? "KTV" : "quản lý";
+  const label = role === "technician" ? "KTV" : role === "receptionist" ? "lễ tân" : "quản lý";
 
   const content = (
     <>
@@ -191,12 +191,16 @@ export function MembersPage({ role, embedded }: { role: "technician" | "manager"
     return (
       <Card>
         <CardHeader
-          title="Tài khoản quản lý ca / lễ tân"
-          subtitle="Được tạo & phân tour, sửa/huỷ tour, gửi thông báo, xem dashboard"
+          title={role === "receptionist" ? "Tài khoản lễ tân" : "Tài khoản quản lý ca"}
+          subtitle={
+            role === "receptionist"
+              ? "Chỉ dùng Bảng điều phối: tạo & phân tour, sửa / huỷ / hoàn thành tour, vào ca hộ KTV. Không xem tiền tour, thu nhập, chốt lương, KTV, cài đặt"
+              : "Được tạo & phân tour, sửa/huỷ tour, gửi thông báo, xem dashboard"
+          }
           action={
             isOwner ? (
               <Button size="sm" onClick={() => setEditing("new")}>
-                <Plus className="h-4 w-4" /> Thêm quản lý
+                <Plus className="h-4 w-4" /> Thêm {label}
               </Button>
             ) : null
           }

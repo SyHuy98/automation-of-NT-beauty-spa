@@ -34,10 +34,12 @@ interface NavItem {
   label: string;
   icon: typeof LayoutDashboard;
   ownerOnly?: boolean;
+  /** lễ tân cũng thấy (lễ tân chỉ phân tour) */
+  receptionist?: boolean;
 }
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Bảng điều phối", icon: LayoutDashboard },
+  { href: "/admin", label: "Bảng điều phối", icon: LayoutDashboard, receptionist: true },
   { href: "/admin/ky-thuat-vien", label: "Kỹ thuật viên", icon: Users },
   { href: "/admin/lich-ca", label: "Lịch ca", icon: CalendarDays },
   { href: "/admin/bang-gia", label: "Bảng giá dịch vụ", icon: Sparkles },
@@ -45,7 +47,7 @@ const NAV: NavItem[] = [
   { href: "/admin/chot-luong", label: "Chốt lương", icon: Wallet },
   { href: "/admin/nhat-ky", label: "Nhật ký thao tác", icon: ClipboardList },
   { href: "/admin/cai-dat", label: "Cài đặt", icon: Settings, ownerOnly: true },
-  { href: "/huong-dan", label: "Hướng dẫn", icon: BookOpenText },
+  { href: "/huong-dan", label: "Hướng dẫn", icon: BookOpenText, receptionist: true },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -81,7 +83,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
   // cảnh báo nhỏ gọn → vẫn kiểm tra khi tab ẩn để chuông không bị lỡ
   useRealtime("admin-alerts", [{ table: "admin_alerts" }], checkAlerts, { pollMs: 20_000, pollHidden: true });
 
-  const items = NAV.filter((i) => !i.ownerOnly || profile.role === "owner");
+  const items = NAV.filter((i) =>
+    profile.role === "receptionist" ? i.receptionist : !i.ownerOnly || profile.role === "owner",
+  );
 
   const nav = (
     <nav aria-label="Điều hướng quản trị" className="flex flex-1 flex-col gap-1">

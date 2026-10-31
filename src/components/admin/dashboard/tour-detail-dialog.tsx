@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm";
 import { Dialog } from "@/components/ui/dialog";
 import { Checkbox, Field, Input, Segmented, Select, Textarea } from "@/components/ui/form";
-import { Badge, Money } from "@/components/ui/misc";
+import { Badge } from "@/components/ui/misc";
+import { Money, useCanSeeMoney } from "../../shared/money";
 import { useToast } from "@/components/ui/toast";
 import type { RankedCandidate } from "@/lib/assignment";
 import {
@@ -66,6 +67,7 @@ export function TourDetailDialog({
   now: number;
   onChanged: () => void;
 }) {
+  const canSeeMoney = useCanSeeMoney();
   const toast = useToast();
   const [confirm, setConfirm] = useState<null | "complete" | "cancel">(null);
   const [offerOpen, setOfferOpen] = useState(false);
@@ -195,7 +197,7 @@ export function TourDetailDialog({
                       {" "}
                       · {m.sharePercent}% · {m.status === "accepted" ? "đã nhận, chờ người còn lại" : m.status === "working" ? "đang làm" : "đã xong"}
                     </span>
-                    {tour.status === "completed" ? (
+                    {tour.status === "completed" && canSeeMoney ? (
                       <span className="text-mocha">
                         {" "}
                         · <Money value={m.amount} className="font-semibold text-espresso" />

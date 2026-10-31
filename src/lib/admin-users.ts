@@ -10,7 +10,7 @@ export type AdminUsersBody =
       password: string;
       full_name: string;
       phone?: string;
-      role: "technician" | "manager";
+      role: "technician" | "manager" | "receptionist";
       gender?: "male" | "female";
       skill_ids: string[];
     }

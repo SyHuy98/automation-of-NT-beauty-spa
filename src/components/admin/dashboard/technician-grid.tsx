@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 import { Dialog } from "@/components/ui/dialog";
 import { Segmented } from "@/components/ui/form";
-import { Avatar, Money, StatusBadge } from "@/components/ui/misc";
+import { Avatar, StatusBadge } from "@/components/ui/misc";
+import { Money, useCanSeeMoney } from "../../shared/money";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatDuration, formatTime, GENDER_LABEL, SHIFT_LABEL } from "@/lib/format";
 import { useQuery } from "@/lib/hooks/use-query";
@@ -111,6 +112,7 @@ function TechCard({
   onCheckOut: () => void;
   onOpenTour: (id: string) => void;
 }) {
+  const canSeeMoney = useCanSeeMoney();
   const shiftLabel = t.checkin
     ? SHIFT_LABEL[t.checkin.shift]
     : t.scheduledShift
@@ -185,7 +187,13 @@ function TechCard({
       <div className="min-h-10">{detail}</div>
       <div className="flex items-center justify-between border-t border-champagne/60 pt-2 text-sm">
         <span className="text-mocha">
-          Hôm nay <Money value={t.todayAmount} className="font-semibold text-espresso" /> · {t.todayTours} tour
+          Hôm nay{" "}
+          {canSeeMoney ? (
+            <>
+              <Money value={t.todayAmount} className="font-semibold text-espresso" /> ·{" "}
+            </>
+          ) : null}
+          {t.todayTours} tour
         </span>
         {status === "off" ? (
           <Button size="sm" variant="ghost" onClick={onCheckIn} aria-label={`Vào ca thay cho ${t.fullName}`}>

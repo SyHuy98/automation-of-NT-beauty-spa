@@ -3,7 +3,7 @@
 import { Check, ChevronDown, Search, Sparkle, VenusAndMars, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/components/ui/cn";
-import { Money } from "@/components/ui/misc";
+import { Money, useCanSeeMoney } from "../../shared/money";
 import { formatMinutes } from "@/lib/format";
 import { matchesSearch } from "@/lib/search";
 import { Spinner } from "@/components/ui/spinner";
@@ -35,6 +35,7 @@ export function ServicePicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const listId = useId();
+  const canSeeMoney = useCanSeeMoney();
 
   const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]);
   const list = services ?? NO_SERVICES;
@@ -115,9 +116,11 @@ export function ServicePicker({
               <span className="font-medium">{s.name}</span>
               {s.requires_skill ? <Sparkle className="h-3 w-3 text-gold-strong" aria-label="Cần kỹ năng riêng" /> : null}
               {s.any_gender ? <VenusAndMars className="h-3 w-3 text-mocha" aria-label="Không phân biệt giới tính khách" /> : null}
-              <span className="text-mocha">
-                · <Money value={s.tour_fee} />
-              </span>
+              {canSeeMoney ? (
+                <span className="text-mocha">
+                  · <Money value={s.tour_fee} />
+                </span>
+              ) : null}
               <button
                 type="button"
                 onClick={() => toggle(s.id)}
@@ -223,7 +226,12 @@ export function ServicePicker({
                     ) : null}
                   </span>
                   <span className="shrink-0 text-sm text-mocha">
-                    <Money value={s.tour_fee} /> · {s.duration_minutes}′
+                    {canSeeMoney ? (
+                      <>
+                        <Money value={s.tour_fee} /> ·{" "}
+                      </>
+                    ) : null}
+                    {s.duration_minutes}′
                   </span>
                 </li>
               );
@@ -236,9 +244,11 @@ export function ServicePicker({
         <span className="text-sm text-mocha">
           {chosen.length} dịch vụ · {minutes ? formatMinutes(minutes) : "0 phút"}
         </span>
-        <span className="text-sm text-mocha">
-          Tổng tiền tour: <Money value={total} className="text-base font-semibold text-espresso" />
-        </span>
+        {canSeeMoney ? (
+          <span className="text-sm text-mocha">
+            Tổng tiền tour: <Money value={total} className="text-base font-semibold text-espresso" />
+          </span>
+        ) : null}
       </div>
       {error ? <p className="mt-1 text-sm text-busy-ink">{error}</p> : null}
       <p className="mt-1 text-xs text-mocha">

@@ -25,7 +25,7 @@ const createSchema = z.object({
   password: passwordSchema,
   full_name: z.string().trim().min(1, "Vui lòng nhập họ tên").max(100),
   phone: phoneSchema,
-  role: z.enum(["technician", "manager"]),
+  role: z.enum(["technician", "manager", "receptionist"]),
   // bắt buộc với KTV (ràng buộc profiles_technician_gender); quản lý thì bỏ qua
   gender: z.enum(["male", "female"]).optional(),
   skill_ids: z.array(z.uuid()).default([]),

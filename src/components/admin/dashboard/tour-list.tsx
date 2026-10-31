@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Card, CardBody, CardHeader, EmptyState } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Segmented } from "@/components/ui/form";
-import { Badge, Money } from "@/components/ui/misc";
+import { Badge } from "@/components/ui/misc";
+import { Money } from "../../shared/money";
 import { ASSIGN_MODE_LABEL, formatDuration, formatTime, TOUR_STATUS_LABEL } from "@/lib/format";
 import type { DashboardTour, TourStatus } from "@/types/app";
 

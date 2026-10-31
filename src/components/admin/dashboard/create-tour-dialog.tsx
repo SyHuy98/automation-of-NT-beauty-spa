@@ -13,6 +13,7 @@ import { ASSIGN_MODE_LABEL, GENDER_LABEL } from "@/lib/format";
 import { tourCreateSchema, fieldErrors, toPhoneLast4 } from "@/lib/validation/schemas";
 import { techStatus, TECH_STATUS_LABEL, type AssignMode, type DashboardTechnician, type Gender } from "@/types/app";
 import { useServices } from "../use-dashboard";
+import { useCanSeeMoney } from "../../shared/money";
 import { CandidateList } from "./candidate-list";
 import { ServicePicker } from "./service-picker";
 import { useRanking } from "./use-ranking";
@@ -42,6 +43,7 @@ function CreateTourBody({
   onCreated: () => void;
 }) {
   const toast = useToast();
+  const canSeeMoney = useCanSeeMoney();
   const { services } = useServices();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -219,7 +221,7 @@ function CreateTourBody({
       open={open}
       onOpenChange={onOpenChange}
       title="Tạo tour mới"
-      description={total ? `Tổng tiền tour: ${total.toLocaleString("vi-VN")} ₫` : undefined}
+      description={total && canSeeMoney ? `Tổng tiền tour: ${total.toLocaleString("vi-VN")} ₫` : undefined}
       size="lg"
       footer={
         <>

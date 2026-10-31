@@ -7,6 +7,7 @@ import { cn } from "@/components/ui/cn";
 import { Avatar } from "@/components/ui/misc";
 import { Spinner } from "@/components/ui/spinner";
 import type { RankedCandidate, RankResult } from "@/lib/assignment";
+import { useCanSeeMoney } from "../../shared/money";
 
 /**
  * Danh sách KTV gợi ý (top 3 mặc định) kèm lý do ngắn bằng tiếng Việt.
@@ -39,6 +40,8 @@ export function CandidateList({
   onToggle?: (id: string) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  // lễ tân không xem số tiền: bỏ lý do có ghi tiền (vd "Hôm nay 300.000 ₫")
+  const canSeeMoney = useCanSeeMoney();
   const [showExcluded, setShowExcluded] = useState(false);
 
   if (error) return <p className="text-sm text-busy-ink">{error}</p>;
@@ -101,7 +104,9 @@ export function CandidateList({
                   {c.fullName}
                   <span className="tabular rounded-full bg-cream px-2 text-xs font-semibold text-mocha">{c.score} điểm</span>
                 </p>
-                <p className="text-sm text-mocha">{c.reasons.join(" · ")}</p>
+                <p className="text-sm text-mocha">
+                  {(canSeeMoney ? c.reasons : c.reasons.filter((r) => !r.includes("₫"))).join(" · ")}
+                </p>
                 {c.warnings.length > 0 ? (
                   <p className="mt-0.5 flex items-start gap-1 text-sm text-pending-ink">
                     <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />

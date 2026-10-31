@@ -222,6 +222,7 @@ export function SettingsPage() {
       )}
 
       <MembersPage role="manager" embedded />
+      <MembersPage role="receptionist" embedded />
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Card>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader, ErrorState, PageHeader } from "@/components/ui/card";
 import { LoadingBlock } from "@/components/ui/spinner";
 import { ConnectionBanner, Money, Stat } from "@/components/ui/misc";
+import { useCanSeeMoney } from "../../shared/money";
 import { useToast } from "@/components/ui/toast";
 import { errorMessage, formatTime } from "@/lib/format";
 import { useNow } from "@/lib/hooks/use-now";
@@ -23,6 +24,7 @@ export function Dashboard() {
   const [createOpen, setCreateOpen] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const toast = useToast();
+  const canSeeMoney = useCanSeeMoney();
 
   const metrics = useMemo(() => {
     if (!data) return null;
@@ -69,7 +71,9 @@ export function Dashboard() {
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 <Stat label="Tour hôm nay" value={metrics.tours} hint={`${metrics.active} tour đang chờ / làm`} />
                 <Stat label="Đã hoàn thành" value={metrics.completed} />
-                <Stat label="Tổng tiền tour" value={<Money value={metrics.revenue} />} hint="Tour hoàn thành hôm nay" />
+                {canSeeMoney ? (
+                  <Stat label="Tổng tiền tour" value={<Money value={metrics.revenue} />} hint="Tour hoàn thành hôm nay" />
+                ) : null}
                 <Stat label="Tour chỉ định" value={metrics.requested} />
               </div>
             ) : null}
@@ -108,18 +112,22 @@ export function Dashboard() {
 
             <TechnicianGrid technicians={data.technicians} now={now} onRefresh={refetch} onOpenTour={setDetailId} />
 
-            <div className="grid gap-6 xl:grid-cols-5">
-              <div className="xl:col-span-3">
-                <TourList tours={data.tours} today={data.today} now={now} onOpen={setDetailId} />
+            {canSeeMoney ? (
+              <div className="grid gap-6 xl:grid-cols-5">
+                <div className="xl:col-span-3">
+                  <TourList tours={data.tours} today={data.today} now={now} onOpen={setDetailId} />
+                </div>
+                <div className="xl:col-span-2">
+                  <BalanceChart
+                    technicians={data.technicians}
+                    thresholdPercent={data.settings.imbalanceThresholdPercent}
+                    periodLabel={data.period.startDay > 1 ? "Kỳ này" : "Tháng này"}
+                  />
+                </div>
               </div>
-              <div className="xl:col-span-2">
-                <BalanceChart
-                  technicians={data.technicians}
-                  thresholdPercent={data.settings.imbalanceThresholdPercent}
-                  periodLabel={data.period.startDay > 1 ? "Kỳ này" : "Tháng này"}
-                />
-              </div>
-            </div>
+            ) : (
+              <TourList tours={data.tours} today={data.today} now={now} onOpen={setDetailId} />
+            )}
           </div>
         )}
       </div>
