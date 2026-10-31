@@ -9,6 +9,15 @@ const phone = z
   .trim()
   .refine((v) => v === "" || /^[0-9 +.-]{8,20}$/.test(v), "Số điện thoại không hợp lệ");
 
+/** Tour chỉ lưu 4 số cuối SĐT khách */
+const phoneLast4 = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || /^[0-9]{4}$/.test(v), "Nhập đúng 4 số cuối số điện thoại");
+
+/** Ô nhập 4 số cuối: chỉ giữ chữ số; dán cả số điện thoại thì lấy 4 số cuối */
+export const toPhoneLast4 = (v: string) => v.replace(/\D/g, "").slice(-4);
+
 export const usernameSchema = z
   .string()
   .trim()
@@ -61,7 +70,7 @@ export const serviceSchema = z.object({
 export const tourCreateSchema = z
   .object({
     customer_name: z.string().trim().min(1, "Vui lòng nhập tên khách").max(120),
-    customer_phone: phone,
+    customer_phone: phoneLast4,
     customer_gender: z.enum(["male", "female"]),
     allow_any_gender: z.boolean().default(false),
     note: z.string().trim().max(1000, "Ghi chú tối đa 1000 ký tự"),
