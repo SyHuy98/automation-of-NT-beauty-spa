@@ -59,7 +59,7 @@ scripts/create-owner.ts   # tạo tài khoản chủ spa
 
 ### Mô hình dữ liệu (tóm tắt)
 
-- `profiles` (vai trò `owner | manager | technician`; KTV **không có ca cố định**), `services` (bảng giá chung), `technician_skills`, `app_settings` (1 dòng).
+- `profiles` (vai trò `owner | manager | receptionist | technician`; KTV **không có ca cố định**), `services` (bảng giá chung), `technician_skills`, `app_settings` (1 dòng).
 - `shift_schedules` (lịch ca theo ngày do admin xếp: sáng / chiều / full / nghỉ) · `shift_checkins` (vào/ra ca thực tế – KTV chọn ca khi bấm Vào ca; nếu admin đã xếp lịch thì chọn sẵn).
 - `tours` → `tour_items` (chụp giá + thời lượng lúc tạo) → `tour_assignments` (KTV + `share_percent` + `earned_amount`) · `tour_offers` · `tour_audit_logs` · `admin_alerts`.
 - `announcements` + `announcement_recipients` · `push_subscriptions` · `payroll_periods` · `earning_disputes`.
@@ -147,12 +147,13 @@ Kiểm thử nghiệp vụ trên DB: dán `supabase/tests/smoke.sql` vào SQL Ed
 - Đăng nhập bằng **tên đăng nhập + mật khẩu**. Bên trong Supabase Auth dùng email ảo `<username>@ntspa.local`.
 - Tài khoản chủ spa đầu tiên đã được tạo (`admin`). **Hãy đổi mật khẩu ngay** ở Cài đặt → Đổi mật khẩu.
 - Tạo thêm owner: `npm run create-owner -- <ten_dang_nhap> "<Họ tên>"` (cần `SUPABASE_SERVICE_ROLE_KEY` trong `.env.local` ở máy bạn).
-- KTV / quản lý do chủ spa tạo trong app (Kỹ thuật viên · Cài đặt → Tài khoản quản lý).
+- KTV / quản lý / lễ tân do chủ spa tạo trong app (Kỹ thuật viên · Cài đặt → Tài khoản quản lý ca / Tài khoản lễ tân).
 
 | Vai trò | Quyền |
 |---|---|
 | owner | Toàn quyền: tài khoản, bảng giá, cài đặt, chốt / mở sổ, xem log |
 | manager | Tạo & phân tour, sửa / huỷ tour (có lý do), lịch ca, gửi thông báo, xem dashboard & chốt lương (không chốt được) |
+| receptionist (lễ tân) | Chỉ Bảng điều phối: tạo & phân tour, sửa / huỷ / hoàn thành tour, vào ca hộ KTV. Không thấy số tiền (tiền tour, thu nhập KTV), không vào các trang khác. Chủ spa tạo tài khoản ở Cài đặt |
 | technician | Chỉ dữ liệu của chính mình |
 
 ---
