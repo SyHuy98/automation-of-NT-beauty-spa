@@ -65,16 +65,19 @@ export function useRealtime(
 
     const subscribe = () => {
       if (disposed) return;
-      channel = supabase.channel(`${channelName}-${Math.random().toString(36).slice(2, 8)}`);
+      const ch = supabase.channel(`${channelName}-${Math.random().toString(36).slice(2, 8)}`);
+      channel = ch;
       for (const t of JSON.parse(key) as RealtimeTable[]) {
-        channel.on(
+        ch.on(
           "postgres_changes",
           { event: "*", schema: "public", table: t.table, ...(t.filter ? { filter: t.filter } : {}) },
           fire,
         );
       }
-      channel.subscribe((status) => {
-        if (disposed) return;
+      ch.subscribe((status) => {
+        // channel cũ (đã bỏ) báo CLOSED khi bị removeChannel → bỏ qua, không thì
+        // removeChannel → CLOSED → removeChannel… lặp vô hạn (tràn stack) khi mất kết nối
+        if (disposed || ch !== channel) return;
         if (status === "SUBSCRIBED") {
           online = true;
           setState("online");
@@ -83,8 +86,8 @@ export function useRealtime(
           online = false;
           setState(navigator.onLine ? "connecting" : "offline");
           // thử lại sau vài giây với channel mới
-          if (channel) supabase.removeChannel(channel);
           channel = null;
+          void supabase.removeChannel(ch);
           if (retry) clearTimeout(retry);
           retry = setTimeout(subscribe, 3000);
         }

@@ -51,14 +51,25 @@ export function Dashboard() {
   return (
     <div className="-mx-4 -mt-6 md:-mx-8 md:-mt-8">
       <ConnectionBanner state={connection} />
+      {/* Điện thoại: nút Tạo tour nổi ở góc dưới, ngay trên thanh điều hướng – trong tầm ngón cái */}
+      <Button
+        size="lg"
+        onClick={() => setCreateOpen(true)}
+        className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 rounded-full px-6 shadow-lift lg:hidden"
+      >
+        <Plus className="h-5 w-5" /> Tạo tour
+      </Button>
       <div className="px-4 pt-6 md:px-8 md:pt-8">
         <PageHeader
           title="Bảng điều phối"
           subtitle={data ? `Cập nhật realtime · ${formatTime(new Date(now).toISOString())}` : "Đang tải dữ liệu…"}
           action={
-            <Button size="lg" onClick={() => setCreateOpen(true)} className="shadow-lift">
-              <Plus className="h-5 w-5" /> Tạo tour
-            </Button>
+            // điện thoại dùng nút nổi ở góc dưới
+            <div className="hidden lg:block">
+              <Button size="lg" onClick={() => setCreateOpen(true)} className="shadow-lift">
+                <Plus className="h-5 w-5" /> Tạo tour
+              </Button>
+            </div>
           }
         />
 
@@ -146,6 +157,8 @@ export function Dashboard() {
         now={now}
         onChanged={() => void refetch()}
       />
+      {/* điện thoại: chừa chỗ để nút Tạo tour nổi không che tour cuối danh sách */}
+      <div className="h-16 lg:hidden" aria-hidden="true" />
     </div>
   );
 }
