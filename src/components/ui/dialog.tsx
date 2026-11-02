@@ -43,7 +43,9 @@ export function Dialog({
           )}
         >
           <div className="flex max-h-[92dvh] flex-col">
-            <div className="flex items-start justify-between gap-4 border-b border-champagne/60 px-5 py-4">
+            {/* điện thoại: hộp thoại trượt từ dưới lên như bottom sheet */}
+            <div className="mx-auto mt-2 h-1.5 w-12 shrink-0 rounded-full bg-champagne sm:hidden" aria-hidden="true" />
+            <div className="flex items-start justify-between gap-4 border-b border-champagne/60 px-5 pb-4 pt-3 sm:pt-4">
               <div>
                 <RD.Title className="font-serif text-xl font-semibold text-espresso">{title}</RD.Title>
                 {description ? (
@@ -53,15 +55,23 @@ export function Dialog({
                 )}
               </div>
               {dismissible ? (
-                <RD.Close className="rounded-lg p-1.5 text-mocha hover:bg-cream" aria-label="Đóng">
+                <RD.Close className="-m-1 rounded-lg p-2.5 text-mocha hover:bg-cream" aria-label="Đóng">
                   <X className="h-5 w-5" />
                 </RD.Close>
               ) : null}
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
             {footer ? (
-              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-champagne/60 bg-cream/40 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              // điện thoại: nút dàn đều, cao hơn – dễ bấm bằng ngón cái
+              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-champagne/60 bg-cream/40 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] max-sm:[&_button]:h-12 max-sm:[&_button]:min-w-[40%] max-sm:[&_button]:flex-1 max-sm:[&_button]:whitespace-nowrap">
                 {footer}
+              </div>
+            ) : dismissible ? (
+              // không có nút ở chân: điện thoại vẫn có nút Đóng ở dưới (nút X trên cùng khó với tới)
+              <div className="border-t border-champagne/60 bg-cream/40 px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:hidden">
+                <RD.Close className="flex h-12 w-full items-center justify-center rounded-xl border border-gold text-[15px] font-semibold text-gold-strong">
+                  Đóng
+                </RD.Close>
               </div>
             ) : null}
           </div>

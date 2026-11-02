@@ -36,18 +36,22 @@ interface NavItem {
   ownerOnly?: boolean;
   /** lễ tân cũng thấy (lễ tân chỉ phân tour) */
   receptionist?: boolean;
+  /** tên ngắn trên thanh điều hướng dưới (điện thoại) */
+  short?: string;
+  /** hiện thẳng trên thanh dưới của điện thoại (còn lại nằm trong "Thêm") */
+  tab?: boolean;
 }
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Bảng điều phối", icon: LayoutDashboard, receptionist: true },
-  { href: "/admin/ky-thuat-vien", label: "Kỹ thuật viên", icon: Users },
-  { href: "/admin/lich-ca", label: "Lịch ca", icon: CalendarDays },
+  { href: "/admin", label: "Bảng điều phối", short: "Điều phối", icon: LayoutDashboard, receptionist: true, tab: true },
+  { href: "/admin/ky-thuat-vien", label: "Kỹ thuật viên", short: "KTV", icon: Users, tab: true },
+  { href: "/admin/lich-ca", label: "Lịch ca", icon: CalendarDays, tab: true },
   { href: "/admin/bang-gia", label: "Bảng giá dịch vụ", icon: Sparkles },
   { href: "/admin/thong-bao", label: "Thông báo", icon: Megaphone },
-  { href: "/admin/chot-luong", label: "Chốt lương", icon: Wallet },
+  { href: "/admin/chot-luong", label: "Chốt lương", icon: Wallet, tab: true },
   { href: "/admin/nhat-ky", label: "Nhật ký thao tác", icon: ClipboardList },
   { href: "/admin/cai-dat", label: "Cài đặt", icon: Settings, ownerOnly: true },
-  { href: "/huong-dan", label: "Hướng dẫn", icon: BookOpenText, receptionist: true },
+  { href: "/huong-dan", label: "Hướng dẫn", icon: BookOpenText, receptionist: true, tab: true },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
@@ -87,10 +91,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
     profile.role === "receptionist" ? i.receptionist : !i.ownerOnly || profile.role === "owner",
   );
 
+  const isActive = (href: string) => (href === "/admin" ? pathname === "/admin" : pathname.startsWith(href));
+  // thanh dưới (điện thoại): tối đa 4 mục + "Thêm"
+  const tabs = items.filter((i) => i.tab).slice(0, 4);
+  const moreActive = items.some((i) => !tabs.includes(i) && isActive(i.href));
+
   const nav = (
     <nav aria-label="Điều hướng quản trị" className="flex flex-1 flex-col gap-1">
       {items.map((item) => {
-        const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+        const active = isActive(item.href);
         const Icon = item.icon;
         return (
           <Link
@@ -99,7 +108,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             aria-current={active ? "page" : undefined}
             onClick={() => setOpen(false)}
             className={cn(
-              "relative flex items-center gap-3 rounded-xl px-4 py-2.5 text-[15px] transition-colors",
+              "relative flex items-center gap-3 rounded-xl px-4 py-3 text-[15px] transition-colors lg:py-2.5",
               active ? "bg-white/8 font-semibold text-champagne" : "text-cream/80 hover:bg-white/5 hover:text-cream",
             )}
           >
@@ -148,38 +157,86 @@ export function AdminShell({ children }: { children: ReactNode }) {
         {footer}
       </aside>
 
-      {/* Thanh trên mobile/tablet */}
-      <header className="sticky top-0 z-40 flex items-center justify-between bg-espresso px-4 py-3 lg:hidden">
+      {/* Điện thoại / tablet: thanh trên chỉ có logo; điều hướng nằm ở thanh dưới để bấm
+          bằng ngón cái (màn hình lớn như iPhone Pro Max khó với tới góc trên) */}
+      <header className="flex items-center justify-between bg-espresso px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] lg:hidden">
         <Link href="/admin">
           <span className="font-serif text-xl font-semibold text-gold">NT Beauty Spa</span>
         </Link>
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          className="rounded-lg p-2 text-cream hover:bg-white/10"
-          aria-label="Mở menu"
-          aria-expanded={open}
+          onClick={() => setAccountOpen(true)}
+          className="rounded-full"
+          aria-label="Tài khoản của tôi – đổi ảnh đại diện"
         >
-          <Menu className="h-6 w-6" />
+          <Avatar name={profile.fullName} src={profile.avatarUrl} size="sm" />
         </button>
       </header>
+
+      <nav
+        aria-label="Điều hướng nhanh"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-champagne bg-ivory/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        <ul className="mx-auto flex max-w-2xl">
+          {tabs.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+            return (
+              <li key={item.href} className="flex-1">
+                <Link
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "relative flex flex-col items-center gap-1 py-2.5 text-xs font-medium",
+                    active ? "text-gold-strong" : "text-mocha",
+                  )}
+                >
+                  {active ? <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-gold" aria-hidden="true" /> : null}
+                  <Icon className="h-6 w-6" />
+                  {item.short ?? item.label}
+                </Link>
+              </li>
+            );
+          })}
+          <li className="flex-1">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              aria-expanded={open}
+              className={cn(
+                "relative flex w-full flex-col items-center gap-1 py-2.5 text-xs font-medium",
+                moreActive ? "text-gold-strong" : "text-mocha",
+              )}
+            >
+              {moreActive ? <span className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-gold" aria-hidden="true" /> : null}
+              <Menu className="h-6 w-6" />
+              Thêm
+            </button>
+          </li>
+        </ul>
+      </nav>
+
       {open ? (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
           <button type="button" className="absolute inset-0 bg-espresso/50" onClick={() => setOpen(false)} aria-label="Đóng menu" />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-espresso px-4 py-6 animate-fade-in">
-            <div className="mb-8 flex items-start justify-between px-2">
-              <Logo tone="gold" />
-              <button type="button" onClick={() => setOpen(false)} className="rounded-lg p-1 text-cream" aria-label="Đóng menu">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+          {/* mở từ dưới lên: mục nào cũng trong tầm ngón cái */}
+          <aside className="absolute inset-x-0 bottom-0 flex max-h-[85dvh] flex-col overflow-y-auto rounded-t-3xl bg-espresso px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 animate-slide-up">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-cream/30" aria-hidden="true" />
             {nav}
             {footer}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="mt-3 flex h-12 items-center justify-center gap-2 rounded-xl bg-white/10 text-[15px] font-semibold text-cream"
+            >
+              <X className="h-5 w-5" /> Đóng
+            </button>
           </aside>
         </div>
       ) : null}
 
-      <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+      {/* chừa chỗ cho thanh điều hướng dưới trên điện thoại */}
+      <main className="min-w-0 flex-1 px-4 pb-28 pt-6 md:px-8 md:pt-8 lg:py-8">{children}</main>
 
       <Dialog open={accountOpen} onOpenChange={setAccountOpen} title="Tài khoản của tôi" description={`@${profile.username}`} size="sm">
         <AvatarUploader userId={profile.id} name={profile.fullName} url={profile.avatarUrl} />
