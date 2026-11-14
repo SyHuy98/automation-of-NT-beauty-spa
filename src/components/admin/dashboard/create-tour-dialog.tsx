@@ -20,8 +20,8 @@ import { useRanking } from "./use-ranking";
 
 const MODE_HINT: Record<AssignMode, string> = {
   suggest: "Hiện top 3 KTV phù hợp nhất kèm lý do – bạn bấm chọn để gửi lời mời.",
-  auto: "Gửi luôn cho người điểm cao nhất; nếu từ chối / hết giờ thì tự chuyển người kế tiếp.",
-  random: "Chọn ngẫu nhiên có trọng số trong nhóm ứng viên tốt – công bằng nhưng không cứng nhắc.",
+  auto: "Gửi luôn cho người điểm cao nhất; nếu từ chối / hết giờ thì tự chuyển người kế tiếp. Mọi KTV bận thì khách vào hàng chờ, có KTV rảnh là tự gửi.",
+  random: "Chọn ngẫu nhiên có trọng số trong nhóm ứng viên tốt – công bằng nhưng không cứng nhắc. Mọi KTV bận thì khách vào hàng chờ.",
   requested: "Khách chỉ định KTV. Nếu KTV đang bận, tour sẽ chờ và tự gửi khi KTV đó rảnh.",
 };
 
@@ -178,10 +178,14 @@ function CreateTourBody({
         }
         const pick =
           mode === "auto" ? pickAuto(fresh.result) : pickWeightedRandom(fresh.result, fresh.snapshot.settings.randomPoolSize);
-        if (pick) ids = [pick.technicianId];
-        else {
+        if (pick) {
+          ids = [pick.technicianId];
+          // tour 2 KTV: thêm người điểm cao kế tiếp; thiếu người thì chỗ còn lại vào hàng chờ
+          const next = pair ? fresh.result.candidates.find((c) => c.technicianId !== pick.technicianId) : undefined;
+          if (next) ids.push(next.technicianId);
+        } else {
           playAlert();
-          toast.warning("Hiện không có KTV rảnh phù hợp – tour sẽ chờ và tự gửi khi có người rảnh");
+          toast.warning("Mọi KTV phù hợp đang bận – khách vào hàng chờ, có KTV rảnh là tự gửi");
         }
       } else if (mode === "requested") {
         ids = pair ? [requestedId, partner].filter(Boolean) : [requestedId];
@@ -195,6 +199,21 @@ function CreateTourBody({
       setSubmitting(false);
     }
   };
+
+  // Gợi ý mà mọi KTV phù hợp đang bận → đưa khách vào hàng chờ tự động
+  const queueNow = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true);
+    try {
+      const tour = await submit([], "auto");
+      if (tour) report(tour);
+    } finally {
+      inFlight.current = false;
+      setSubmitting(false);
+    }
+  };
+  const allBusy = mode === "suggest" && !ranking.loading && !!ranking.result && ranking.result.candidates.length === 0;
 
   // Tour chỉ gồm dịch vụ không phân biệt giới tính (tiêm meso, botox, HIFU…)
   const genderFree =
@@ -326,7 +345,7 @@ function CreateTourBody({
             options={(["suggest", "auto", "random", "requested"] as AssignMode[]).map((m) => ({
               value: m,
               label: ASSIGN_MODE_LABEL[m],
-              disabled: pair && (m === "auto" || m === "random"),
+
             }))}
           />
           <p className="text-sm text-mocha">{MODE_HINT[mode]}</p>
@@ -336,8 +355,6 @@ function CreateTourBody({
             onChange={(v) => {
               setPair(v);
               setSelected([]);
-              // Tour 2 KTV không dùng chế độ Tự động / Random
-              if (v && (mode === "auto" || mode === "random")) setMode("suggest");
             }}
             label="2 KTV làm chung"
             description="Chọn 2 người và tỷ lệ chia tiền (tổng 100%)"
@@ -417,6 +434,19 @@ function CreateTourBody({
                 )}
               </Field>
             ) : null}
+          </div>
+        ) : null}
+
+        {allBusy ? (
+          <div className="rounded-2xl border border-gold/60 bg-champagne/30 p-4">
+            <p className="font-semibold text-espresso">Mọi KTV phù hợp đang bận</p>
+            <p className="mt-1 text-sm text-mocha">
+              Đưa khách vào <strong>hàng chờ</strong>: có KTV rảnh là hệ thống tự gửi cho người phù hợp nhất (chia công bằng),
+              khách đến trước được phục vụ trước. Xem thứ tự và giờ dự kiến ở khung “Hàng chờ” trên bảng điều phối.
+            </p>
+            <Button className="mt-3" onClick={queueNow} loading={submitting} disabled={busy}>
+              Đưa vào hàng chờ
+            </Button>
           </div>
         ) : null}
 

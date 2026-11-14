@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Pencil, Repeat, Send, Star, Undo2, XCircle } from "lucide-react";
+import { CheckCircle2, Pencil, Repeat, Send, Star, Undo2, XCircle, Zap } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm";
@@ -134,6 +134,19 @@ export function TourDetailDialog({
             {tour.status !== "cancelled" ? (
               <Button variant="secondary" onClick={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4" /> Sửa
+              </Button>
+            ) : null}
+            {canSendMore && tour.assignMode === "suggest" && !tour.isRequested ? (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  void rpc(
+                    () => supabase.rpc("set_auto_dispatch", { p_tour_id: tour.id }),
+                    "Đã đưa vào hàng chờ – có KTV rảnh là tự gửi",
+                  ).catch((e: unknown) => toast.error(errorMessage(e)))
+                }
+              >
+                <Zap className="h-4 w-4" /> Vào hàng chờ
               </Button>
             ) : null}
             {canSendMore ? (

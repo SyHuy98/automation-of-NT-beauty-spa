@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import {
   type AssignmentSnapshot,
   type TechnicianSnapshot,
+  canServeWhenFree,
   formatVndPlain,
   pickAuto,
   pickWeightedRandom,
@@ -386,5 +387,31 @@ describe("tiện ích", () => {
     const src = readFileSync(resolve(__dirname, "../score.ts"), "utf8");
     const copy = readFileSync(resolve(__dirname, "../../../../supabase/functions/_shared/score.ts"), "utf8");
     expect(copy).toBe(src);
+  });
+});
+
+describe("hàng chờ – canServeWhenFree", () => {
+  const busy = { isFree: false, busyReason: "Đang làm tour khác" };
+
+  it("mọi KTV phù hợp đang bận → vẫn phục vụ được (khách chờ trong hàng chờ)", () => {
+    const snap = snapshot([tech({ id: "a", ...busy }), tech({ id: "b", ...busy })]);
+    expect(rankTechnicians(snap).candidates).toHaveLength(0);
+    expect(canServeWhenFree(snap)).toBe(true);
+  });
+
+  it("khách nữ mà chỉ còn KTV nam đang làm → không ai làm được, phải báo quản lý", () => {
+    const snap = snapshot([tech({ id: "m", gender: "male", ...busy }), tech({ id: "f", gender: "female", checkedIn: false })], {
+      customerGender: "female",
+    });
+    expect(canServeWhenFree(snap)).toBe(false);
+  });
+
+  it("thiếu kỹ năng / đã từ chối thì dù rảnh cũng không tính", () => {
+    const snap = snapshot([tech({ id: "a", ...busy, excluded: true }), tech({ id: "b", ...busy })], {
+      requiredSkillServiceIds: ["meso"],
+    });
+    expect(canServeWhenFree(snap)).toBe(false);
+    const ok = snapshot([tech({ id: "b", ...busy, skillServiceIds: ["meso"] })], { requiredSkillServiceIds: ["meso"] });
+    expect(canServeWhenFree(ok)).toBe(true);
   });
 });

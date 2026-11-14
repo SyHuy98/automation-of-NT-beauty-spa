@@ -16,6 +16,7 @@ import { BalanceChart } from "./balance-chart";
 import { CreateTourDialog } from "./create-tour-dialog";
 import { TechnicianGrid } from "./technician-grid";
 import { TourDetailDialog } from "./tour-detail-dialog";
+import { QueuePanel } from "./queue-panel";
 import { TourList } from "./tour-list";
 
 export function Dashboard() {
@@ -120,6 +121,14 @@ export function Dashboard() {
                 </CardBody>
               </Card>
             ) : null}
+
+            <QueuePanel
+              tours={data.tours}
+              technicians={data.technicians}
+              now={now}
+              onOpen={setDetailId}
+              onChanged={() => void refetch()}
+            />
 
             <TechnicianGrid technicians={data.technicians} now={now} onRefresh={refetch} onOpenTour={setDetailId} />
 

@@ -84,9 +84,6 @@ export const tourCreateSchema = z
     if (v.assign_mode === "requested" && !v.requested_technician_id) {
       ctx.addIssue({ code: "custom", path: ["requested_technician_id"], message: "Chọn KTV khách chỉ định" });
     }
-    if (v.team_size === 2 && (v.assign_mode === "auto" || v.assign_mode === "random")) {
-      ctx.addIssue({ code: "custom", path: ["assign_mode"], message: "Tour 2 KTV chỉ dùng chế độ Gợi ý hoặc Chỉ định" });
-    }
     if (v.team_size === 2 && v.offers.length === 2) {
       const sum = v.offers.reduce((s, o) => s + o.share_percent, 0);
       if (sum !== 100) ctx.addIssue({ code: "custom", path: ["offers"], message: "Tổng tỷ lệ chia phải bằng 100%" });
