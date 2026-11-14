@@ -207,6 +207,16 @@ export function exclusionReason(t: TechnicianSnapshot, requiredSkillServiceIds: 
 }
 
 /**
+ * Hàng chờ: khi không còn ai rảnh, tour có KTV nào (đang bận nhưng đã vào ca, đủ kỹ năng,
+ * đúng giới tính, chưa từ chối tour này) làm được không? Có → khách chỉ cần chờ trong
+ * hàng chờ, không phải báo quản lý; không → báo quản lý phân tay.
+ */
+export function canServeWhenFree(snapshot: AssignmentSnapshot): boolean {
+  const allFree = snapshot.technicians.map((t) => ({ ...t, isFree: true, busyReason: null }));
+  return rankTechnicians({ ...snapshot, technicians: allFree }).candidates.length > 0;
+}
+
+/**
  * Bước 2 + 3 – chấm điểm và giải thích. Trả về ứng viên sắp xếp điểm giảm dần.
  */
 export function rankTechnicians(snapshot: AssignmentSnapshot): RankResult {

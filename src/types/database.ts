@@ -1123,6 +1123,7 @@ export type Database = {
         }
         Returns: Json
       }
+      set_auto_dispatch: { Args: { p_tour_id: string }; Returns: undefined }
       split_fee: {
         Args: { p_shares: number[]; p_total: number }
         Returns: number[]
@@ -1134,7 +1135,7 @@ export type Database = {
         Returns: undefined
       }
       system_send_offer: {
-        Args: { p_technician_id: string; p_tour_id: string }
+        Args: { p_share?: number; p_technician_id: string; p_tour_id: string }
         Returns: Json
       }
       technician_earnings: {
