@@ -21,6 +21,7 @@ Toàn bộ giao diện tiếng Việt, tiền VND, mọi khái niệm "hôm nay 
 | Hết hạn lời mời | `pg_cron` mỗi 20 giây + client gọi ngay khi đếm về 0 | Không phụ thuộc điện thoại KTV |
 | Nhắc tour quá giờ | `pg_cron` mỗi phút (`check_overdue_tours`) | Quá thời lượng + N phút (Cài đặt, mặc định 15) → báo quản lý (chuông) + push nhắc KTV bấm Hoàn thành |
 | Dọn nhật ký cron | `pg_cron` 02:30 mỗi đêm xoá `cron.job_run_details` cũ hơn 7 ngày | Tránh đầy 500 MB gói Free (~1 MB/ngày nếu để nguyên) |
+| Hàng chờ khách khi KTV bận | Tour Tự động / Random (cả tour 2 KTV) chờ theo thứ tự đến; KTV rảnh / từ chối / pg_cron mỗi phút → Edge Function `dispatch` gửi cho người phù hợp nhất | Bảng điều phối có khung **Hàng chờ** (thứ tự, đã chờ bao lâu, giờ dự kiến có KTV); tour Gợi ý bấm "Tự động" để vào hàng chờ; chỉ báo quản lý khi không KTV nào làm được tour |
 | Tour khách chỉ định đang chờ | `pg_cron` mỗi phút (`dispatch_requested_waiting`) + ngay khi KTV rảnh | KTV chỉ định rảnh mà lỡ sự kiện vẫn được gửi lời mời |
 | Làm mới dữ liệu | Realtime + poll dự phòng | Realtime đang chạy → poll 2 phút/lần; mất Realtime → 20–30 giây; tab ẩn → không poll. Giữ egress dưới 5 GB gói Free |
 | Tự chuyển người kế tiếp | Edge Function `dispatch` (gọi từ Postgres qua `pg_net`) | Dùng chung thuật toán `src/lib/assignment` |

@@ -89,7 +89,7 @@ function QueueRow({
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-champagne bg-white/80 px-3 py-2">
-      <button type="button" onClick={() => onOpen(t.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+      <button type="button" onClick={() => onOpen(t.id)} className="flex min-w-[16rem] flex-1 items-center gap-3 text-left">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-espresso font-semibold text-cream">
           {entry.position}
         </span>
@@ -115,7 +115,7 @@ function QueueRow({
         <ChevronRight className="h-4 w-4 shrink-0 text-taupe" aria-hidden="true" />
       </button>
       {manual ? (
-        <Button size="sm" variant="secondary" onClick={toAuto} loading={busy}>
+        <Button size="sm" variant="secondary" onClick={toAuto} loading={busy} className="ml-12 sm:ml-0">
           <Zap className="h-4 w-4" /> Tự động
         </Button>
       ) : null}
